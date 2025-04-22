@@ -32,11 +32,11 @@ function ProtectedRoute() {
   }
 
   return (
-    <MainLayout>
-      <Suspense fallback={<PageLoader />}>
-        <Outlet />
-      </Suspense>
-    </MainLayout>
+    <MainLayout></MainLayout>
+      // <Suspense fallback={<PageLoader />}>
+      //   <Outlet />
+      // </Suspense>
+    
   );
 }
 
