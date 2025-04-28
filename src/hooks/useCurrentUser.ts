@@ -1,6 +1,4 @@
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { validateUser } from "../services/authService";
 
 // Define User type directly if you don't have a types file
@@ -23,8 +21,6 @@ interface UseCurrentUserResult {
 }
 
 export function useCurrentUser(): UseCurrentUserResult {
-  const navigate = useNavigate();
-  
   const queryOptions: UseQueryOptions<User | null, Error> = {
     queryKey: ["currentUser"],
     queryFn: validateUser,
@@ -38,15 +34,6 @@ export function useCurrentUser(): UseCurrentUserResult {
     isError,
     refetch,
   } = useQuery<User | null, Error>(queryOptions);
-
-  useEffect(() => {
-    if (isError) {
-      navigate("/login");
-    }
-    if (!isLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, isLoading, isError, navigate]);
 
   return {
     user: user || null,
