@@ -31,6 +31,7 @@ function ProtectedRoute() {
     return <PageLoader />;
   }
 
+
   return isAuthenticated ? (
     <MainLayout>
     {/*  <Suspense fallback={<PageLoader />}>
@@ -39,6 +40,7 @@ function ProtectedRoute() {
     </MainLayout>
   ) : (
     <Navigate to="/login" replace />
+
   );
 }
 
