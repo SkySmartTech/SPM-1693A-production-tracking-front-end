@@ -8,6 +8,7 @@ import {
   Stack,
 } from "@mui/material";
 import { AccountCircle } from "@mui/icons-material";
+import { Link } from "react-router-dom";
 
 interface RegisterFormProps {
   form: {
@@ -190,9 +191,11 @@ const RegisterForm = ({ form, handleChange }: RegisterFormProps) => {
 
       {/* Sign In Link */}
       <Box sx={{ mt: 1, textAlign: "center" }}>
-        <Button variant="text" color="secondary" startIcon={<AccountCircle />}>
-          Sign In to System
-        </Button>
+        <Link to="/login">
+          <Button startIcon={<AccountCircle />} sx={{ textTransform: "none" }}>
+            Login to system
+          </Button>
+        </Link>
       </Box>
     </Box>
   );

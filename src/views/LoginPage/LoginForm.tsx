@@ -12,7 +12,7 @@ import {
 import { AccountCircle, Info } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { useSnackbar } from "notistack";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { login } from "../../services/authService";
 
@@ -44,21 +44,21 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
     onSuccess: (data) => {
       // Store token
       localStorage.setItem("token", data.access_token);
-      
+
       // Invalidate and refetch current user
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-      
+
       // Show success message
-      enqueueSnackbar(`Welcome back, ${data.user.name}!`, { 
-        variant: "success" 
+      enqueueSnackbar(`Welcome back, ${data.user.name}!`, {
+        variant: "success"
       });
-      
+
       // Navigate to home
       navigate("/home");
     },
     onError: (error) => {
-      enqueueSnackbar(error.message || "Login failed", { 
-        variant: "error" 
+      enqueueSnackbar(error.message || "Login failed", {
+        variant: "error"
       });
     },
     onSettled: () => setIsPending(false),
@@ -85,12 +85,12 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
 
       <form onSubmit={onSubmit}>
         <TextField
-          label="Username or Email"
+          label="Enter your username"
           fullWidth
           variant="outlined"
           margin="normal"
-          {...register("username", { 
-            required: "Username or email is required" 
+          {...register("username", {
+            required: "Username or email is required"
           })}
           error={!!errors.username}
           helperText={errors.username?.message}
@@ -98,12 +98,12 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
         />
 
         <TextField
-          label="Password"
+          label="Enter your password"
           type="password"
           fullWidth
           variant="outlined"
           margin="normal"
-          {...register("password", { 
+          {...register("password", {
             required: "Password is required",
             minLength: {
               value: 6,
@@ -117,7 +117,7 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
 
         <FormControlLabel
           control={
-            <Checkbox 
+            <Checkbox
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
               color="primary"
@@ -150,13 +150,11 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
           >
             Forgot password?
           </Button>
-          <Button
-            startIcon={<AccountCircle />}
-            onClick={() => navigate("/register")}
-            sx={{ textTransform: "none" }}
-          >
-            Create account
-          </Button>
+          <Link to="/register">
+            <Button startIcon={<AccountCircle />} sx={{ textTransform: "none" }}>
+              Create account
+            </Button>
+          </Link>
         </Box>
       </form>
     </Box>

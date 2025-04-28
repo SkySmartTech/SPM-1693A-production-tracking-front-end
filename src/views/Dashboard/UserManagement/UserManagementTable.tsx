@@ -46,11 +46,12 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ users, handle
                 "EPF",
                 "Employee Name",
                 "Username",
+                "Password",
                 "Department",
                 "Contact",
                 "Email",
                 "User Type",
-                "Status",
+                "Availability",
                 "Actions"
               ].map((header) => (
                 <TableCell key={header} sx={{ fontWeight: "bold" }}>
@@ -67,6 +68,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ users, handle
                   <TableCell>{user.epf}</TableCell>
                   <TableCell>{user.employeeName}</TableCell>
                   <TableCell>{user.username}</TableCell>
+                  <TableCell>{user.password}</TableCell>
                   <TableCell>{user.department}</TableCell>
                   <TableCell>{user.contact}</TableCell>
                   <TableCell>{user.email}</TableCell>

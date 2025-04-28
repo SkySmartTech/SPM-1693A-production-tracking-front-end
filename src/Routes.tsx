@@ -25,32 +25,36 @@ const UserAccessManagement = React.lazy(() => import("./views/Dashboard/UserAcce
 const UserAccessManagementSystem = React.lazy(() => import("./views/Dashboard/UserAccessManagementSystem/UserAccessManagementSystem"));
 
 function ProtectedRoute() {
-  const { isAuthenticated } = useCurrentUser();
+  const { isAuthenticated, isLoading } = useCurrentUser();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (isLoading) {
+    return <PageLoader />;
   }
 
-  return (
+  return isAuthenticated ? (
     <MainLayout>
-      <Suspense fallback={<PageLoader />}>
+    {/*  <Suspense fallback={<PageLoader />}>
         <Outlet />
-      </Suspense>
+      </Suspense> */}
     </MainLayout>
+  ) : (
+    <Navigate to="/login" replace />
   );
 }
 
 function PublicRoute() {
-  const { isAuthenticated } = useCurrentUser();
+  const { isAuthenticated, isLoading } = useCurrentUser();
 
-  if (isAuthenticated) {
-    return <Navigate to="/home" replace />;
+  if (isLoading) {
+    return <PageLoader />;
   }
 
-  return (
+  return !isAuthenticated ? (
     <Suspense fallback={<PageLoader />}>
       <Outlet />
     </Suspense>
+  ) : (
+    <Navigate to="/home" replace />
   );
 }
 
