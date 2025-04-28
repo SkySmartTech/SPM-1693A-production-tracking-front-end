@@ -9,7 +9,8 @@ import {
   Divider,
   styled,
   Toolbar,
-  Box
+  Box,
+  Avatar
 } from "@mui/material";
 import {
   Home,
@@ -155,8 +156,8 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': { 
-            boxSizing: 'border-box', 
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
             width: open ? drawerWidth : 56,
             backgroundColor: mode === 'dark' ? "#1e1e1e" : "#ffffff",
             color: mode === 'dark' ? "#ffffff" : "#000000",
@@ -170,6 +171,40 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
         open
       >
         <Toolbar />
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            py: 2,
+            borderBottom: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)',
+            mb: 1
+          }}
+        >
+          <Avatar
+            src="/images/logo.png"
+            alt="Company Logo"
+            sx={{
+              width: open ? 80 : 40,
+              height: open ? 80 : 40,
+              transition: 'all 0.3s ease',
+              mb: 1
+            }}
+          />
+
+          {open && (
+            <Box
+              component="span"
+              sx={{
+                fontWeight: 600,
+                fontSize: '1rem',
+                color: mode === 'dark' ? '#ffffff' : '#000000'
+              }}
+            >
+              BuildTeck Asia
+            </Box>
+          )}
+        </Box>
         <List sx={{ p: 0 }}>
           {sidebarItems.map((item, index) => {
             if (item.type === "headline") {
@@ -191,12 +226,12 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
 
             if (item.type === "divider") {
               return (
-                <Divider 
-                  key={index} 
-                  sx={{ 
-                    my: 1, 
-                    backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)" 
-                  }} 
+                <Divider
+                  key={index}
+                  sx={{
+                    my: 1,
+                    backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"
+                  }}
                 />
               );
             }
@@ -206,8 +241,8 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
                 <div key={index}>
                   <ListItemButton
                     onClick={() => toggleSection(item.title!)}
-                    sx={{ 
-                      minHeight: 48, 
+                    sx={{
+                      minHeight: 48,
                       px: 2.5,
                       "&:hover": {
                         backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
@@ -219,7 +254,7 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
                       <>
                         <ListItemText
                           primary={item.title}
-                          primaryTypographyProps={{ 
+                          primaryTypographyProps={{
                             fontSize: "0.875rem",
                             color: mode === 'dark' ? "#ffffff" : "#000000"
                           }}
@@ -235,11 +270,11 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
                   <Collapse in={openSections[item.title!] && open} timeout="auto" unmountOnExit>
                     <List disablePadding sx={{ pl: 2 }}>
                       {item.children?.map((child, childIndex) => (
-                        <ListItemButton 
-                          key={childIndex} 
+                        <ListItemButton
+                          key={childIndex}
                           onClick={() => handleItemClick(child)}
-                          sx={{ 
-                            pl: 4, 
+                          sx={{
+                            pl: 4,
                             minHeight: 48,
                             "&:hover": {
                               backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
@@ -250,7 +285,7 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
                           {open && (
                             <ListItemText
                               primary={child.title}
-                              primaryTypographyProps={{ 
+                              primaryTypographyProps={{
                                 fontSize: "0.875rem",
                                 color: mode === 'dark' ? "#ffffff" : "#000000"
                               }}
@@ -265,11 +300,11 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
             }
 
             return (
-              <ListItemButton 
-                key={index} 
+              <ListItemButton
+                key={index}
                 onClick={() => handleItemClick(item)}
-                sx={{ 
-                  minHeight: 48, 
+                sx={{
+                  minHeight: 48,
                   px: 2.5,
                   "&:hover": {
                     backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
@@ -280,7 +315,7 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
                 {open && (
                   <ListItemText
                     primary={item.title}
-                    primaryTypographyProps={{ 
+                    primaryTypographyProps={{
                       fontSize: "0.875rem",
                       color: mode === 'dark' ? "#ffffff" : "#000000"
                     }}
