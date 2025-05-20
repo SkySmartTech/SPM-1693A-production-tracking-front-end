@@ -9,9 +9,6 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
-import { useSnackbar } from "notistack";
-import { useMutation } from "@tanstack/react-query";
-// import { forgotPassword } from "../../services/authService";
 
 interface ForgotPasswordDialogProps {
   open: boolean;
@@ -19,30 +16,8 @@ interface ForgotPasswordDialogProps {
 }
 
 const ForgotPasswordDialog = ({ open, handleClose }: ForgotPasswordDialogProps) => {
-  const { enqueueSnackbar } = useSnackbar();
   const [email, setEmail] = useState("");
-  const [isPending, setIsPending] = useState(false);
-
-  // const { mutate: forgotPasswordMutation } = useMutation({
-  //   mutationFn: forgotPassword,
-  //   onMutate: () => setIsPending(true),
-  //   onSuccess: () => {
-  //     enqueueSnackbar("Password reset instructions sent to your email!", { variant: "success" });
-  //     handleClose();
-  //   },
-  //   onError: (error: any) => {
-  //     enqueueSnackbar(error.message || "Failed to send reset instructions", { variant: "error" });
-  //   },
-  //   onSettled: () => setIsPending(false),
-  // });
-
-  // const handleSubmit = () => {
-  //   if (!email) {
-  //     enqueueSnackbar("Please enter your email address.", { variant: "warning" });
-  //     return;
-  //   }
-  //   forgotPasswordMutation(email);
-  // };
+  const [isPending] = useState(false);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -69,7 +44,6 @@ const ForgotPasswordDialog = ({ open, handleClose }: ForgotPasswordDialogProps) 
           Cancel
         </Button>
         <Button
-          // onClick={handleSubmit}
           variant="contained"
           color="primary"
           disabled={isPending}
