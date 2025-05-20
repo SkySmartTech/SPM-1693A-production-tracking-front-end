@@ -1,1 +1,0 @@
-import{j as o,B as r,T as e}from"./index-DbvNdllW.js";const s=()=>o.jsx(r,{sx:{py:2,textAlign:"center",bgcolor:"#f1f1f1"},children:o.jsx(e,{variant:"body2",color:"textSecondary",children:"© 2025 Sky Smart Technology. All rights reserved."})});export{s as F};
