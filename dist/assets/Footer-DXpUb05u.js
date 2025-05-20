@@ -1,1 +1,0 @@
-import{j as o,B as r,T as n}from"./index-bN0kxz6j.js";function e(){return o.jsx(r,{sx:{textAlign:"center",padding:"10px",bgcolor:"#ddd",marginTop:"20px"},children:o.jsx(n,{children:"2025 © Sky Smart Technology"})})}export{e as F};
