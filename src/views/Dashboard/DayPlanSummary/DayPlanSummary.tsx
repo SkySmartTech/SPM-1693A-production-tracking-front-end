@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -13,7 +13,11 @@ import {
   Divider,
   Snackbar,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Menu,
+  MenuItem,
+  Badge,
+  CssBaseline
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -27,11 +31,11 @@ import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import axios from "axios";
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import Footer from "../../../components/Footer";
-import { Menu, MenuItem, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 
 interface ReportData {
   id: number;
@@ -68,16 +72,32 @@ const columns: GridColDef[] = [
   { field: "defect", headerName: "Defect", width: 100, type: 'number' },
 ];
 
+const fetchReports = async (startDate?: Dayjs | null, endDate?: Dayjs | null): Promise<ReportData[]> => {
+  const params: Record<string, string> = {};
+  if (startDate) params.start_date = startDate.format('YYYY-MM-DD');
+  if (endDate) params.end_date = endDate.format('YYYY-MM-DD');
+  
+  const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/dayplan-reports`, { params });
+  return response.data;
+};
+
+const fetchMetrics = async (startDate?: Dayjs | null, endDate?: Dayjs | null): Promise<PerformanceMetrics> => {
+  const params: Record<string, string> = {};
+  if (startDate) params.start_date = startDate.format('YYYY-MM-DD');
+  if (endDate) params.end_date = endDate.format('YYYY-MM-DD');
+  
+  const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/performance-metrics`, { params });
+  return response.data;
+};
+
 const DayPlanReport = () => {
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
-  const [rows, setRows] = useState<ReportData[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
-  const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -88,37 +108,43 @@ const DayPlanReport = () => {
     pageSize: 10,
     page: 0,
   });
-  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics>({
-    performanceEfi: 0,
-    lineEfi: 0,
-    totalSuccess: 0,
-    totalRework: 0,
-    totalDefect: 0,
-    topDefects: []
+
+  // Fetch reports data
+  const { 
+    data: reportsData, 
+    isLoading: isReportsLoading, 
+    isError: isReportsError,
+    refetch: refetchReports 
+  } = useQuery({
+    queryKey: ["dayplan-reports", startDate, endDate],
+    queryFn: () => fetchReports(startDate, endDate),
+    enabled: false
   });
 
-  // Fetch initial data when component mounts
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
+  // Fetch performance metrics
+  const { 
+    data: metricsData, 
+    isLoading: isMetricsLoading, 
+    isError: isMetricsError,
+    refetch: refetchMetrics 
+  } = useQuery({
+    queryKey: ["performance-metrics", startDate, endDate],
+    queryFn: () => fetchMetrics(startDate, endDate),
+    enabled: false
+  });
 
-  const fetchInitialData = async () => {
+  const handleFetchReports = async () => {
+    if (!startDate || !endDate) {
+      showSnackbar("Please select both start and end dates.", "error");
+      return;
+    }
+
     try {
-      setLoading(true);
-      // Fetch both reports and metrics in parallel
-      const [reportsResponse, metricsResponse] = await Promise.all([
-        axios.get<ReportData[]>("http://localhost:8000/api/day-plans"),
-        axios.get<PerformanceMetrics>("http://localhost:8000/api/performance-metrics")
-      ]);
-      
-      setRows(reportsResponse.data);
-      setPerformanceMetrics(metricsResponse.data);
-      showSnackbar("Data loaded successfully", "success");
+      await Promise.all([refetchReports(), refetchMetrics()]);
+      showSnackbar("Reports fetched successfully", "success");
     } catch (error) {
-      console.error("Error fetching initial data:", error);
-      showSnackbar("Failed to load initial data", "error");
-    } finally {
-      setLoading(false);
+      console.error("Error fetching reports:", error);
+      showSnackbar("Failed to fetch reports", "error");
     }
   };
 
@@ -169,92 +195,13 @@ const DayPlanReport = () => {
     handleNotificationMenuClose();
   };
 
-  const fetchReports = async () => {
-    if (!startDate || !endDate) {
-      showSnackbar("Please select both start and end dates.", "error");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // Fetch both reports and metrics in parallel
-      const [reportsResponse, metricsResponse] = await Promise.all([
-        axios.get<ReportData[]>("http://localhost:8000/api/dayplan-reports", {
-          params: {
-            start_date: startDate.format('YYYY-MM-DD'),
-            end_date: endDate.format('YYYY-MM-DD'),
-          },
-        }),
-        axios.get<PerformanceMetrics>("http://localhost:8000/api/performance-metrics", {
-          params: {
-            start_date: startDate.format('YYYY-MM-DD'),
-            end_date: endDate.format('YYYY-MM-DD'),
-          },
-        })
-      ]);
-      
-      setRows(reportsResponse.data);
-      setPerformanceMetrics(metricsResponse.data);
-      showSnackbar("Reports fetched successfully", "success");
-    } catch (error) {
-      console.error("Error fetching reports:", error);
-      showSnackbar("Failed to fetch reports", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Laravel backend API endpoints would look something like this:
-  /*
-  // routes/api.php
-  Route::get('/day-plans', [DayPlanController::class, 'index']);
-  Route::get('/dayplan-reports', [DayPlanController::class, 'reports']);
-  Route::get('/performance-metrics', [PerformanceMetricsController::class, 'index']);
-
-  // App/Http/Controllers/DayPlanController.php
-  public function index(Request $request) {
-    return DayPlan::orderBy('serverDateTime', 'desc')->limit(100)->get();
-  }
-
-  public function reports(Request $request) {
-    $query = DayPlan::query();
-    
-    if ($request->has('start_date') && $request->has('end_date')) {
-      $query->whereBetween('serverDateTime', [
-        $request->start_date,
-        $request->end_date
-      ]);
-    }
-    
-    return $query->orderBy('serverDateTime', 'desc')->get();
-  }
-
-  // App/Http/Controllers/PerformanceMetricsController.php
-  public function index(Request $request) {
-    $query = DayPlan::query();
-    
-    if ($request->has('start_date') && $request->has('end_date')) {
-      $query->whereBetween('serverDateTime', [
-        $request->start_date,
-        $request->end_date
-      ]);
-    }
-    
-    $data = $query->get();
-    
-    return [
-      'performanceEfi' => $data->avg('success') / ($data->avg('success') + $data->avg('rework') + $data->avg('defect')) * 100,
-      'lineEfi' => $data->sum('success') / ($data->sum('success') + $data->sum('rework') + $data->sum('defect')) * 100,
-      'totalSuccess' => $data->sum('success'),
-      'totalRework' => $data->sum('rework'),
-      'totalDefect' => $data->sum('defect'),
-      'topDefects' => $data->groupBy('defect')->sortDesc()->keys()->take(3)->toArray()
-    ];
-  }
-  */
+  const isLoading = isReportsLoading || isMetricsLoading;
+  const isError = isReportsError || isMetricsError;
 
   return (
-    <Box sx={{ display: "full", width: "95vw", height: "100vh", minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
+      <CssBaseline />
+      
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen || hovered}
@@ -364,12 +311,12 @@ const DayPlanReport = () => {
                   </Typography>
                   <Box display="flex" alignItems="center">
                     <Typography variant="h5" component="div">
-                      {performanceMetrics.performanceEfi.toFixed(2)}%
+                      {metricsData?.performanceEfi?.toFixed(2) ?? 0}%
                     </Typography>
-                    <TrendingUpIcon color={performanceMetrics.performanceEfi > 0 ? "success" : "error"} sx={{ ml: 1 }} />
+                    <TrendingUpIcon color={(metricsData?.performanceEfi ?? 0) > 0 ? "success" : "error"} sx={{ ml: 1 }} />
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {performanceMetrics.performanceEfi > 0 ? "More than yesterday" : "Less than yesterday"}
+                    {(metricsData?.performanceEfi ?? 0) > 0 ? "More than yesterday" : "Less than yesterday"}
                   </Typography>
                 </CardContent>
               </Card>
@@ -383,12 +330,12 @@ const DayPlanReport = () => {
                   </Typography>
                   <Box display="flex" alignItems="center">
                     <Typography variant="h5" component="div">
-                      {performanceMetrics.lineEfi.toFixed(2)}%
+                      {metricsData?.lineEfi?.toFixed(2) ?? 0}%
                     </Typography>
-                    <TrendingUpIcon color={performanceMetrics.lineEfi > 0 ? "success" : "error"} sx={{ ml: 1 }} />
+                    <TrendingUpIcon color={(metricsData?.lineEfi ?? 0) > 0 ? "success" : "error"} sx={{ ml: 1 }} />
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {performanceMetrics.lineEfi > 0 ? "More than yesterday" : "Less than yesterday"}
+                    {(metricsData?.lineEfi ?? 0) > 0 ? "More than yesterday" : "Less than yesterday"}
                   </Typography>
                 </CardContent>
               </Card>
@@ -402,7 +349,7 @@ const DayPlanReport = () => {
                   </Typography>
                   <Box display="flex" alignItems="center">
                     <Typography variant="h5" component="div">
-                      {performanceMetrics.totalSuccess}
+                      {metricsData?.totalSuccess ?? 0}
                     </Typography>
                     <TrendingUpIcon color="success" sx={{ ml: 1 }} />
                   </Box>
@@ -421,7 +368,7 @@ const DayPlanReport = () => {
                   </Typography>
                   <Box display="flex" alignItems="center">
                     <Typography variant="h5" component="div">
-                      {performanceMetrics.totalRework}
+                      {metricsData?.totalRework ?? 0}
                     </Typography>
                     <TrendingUpIcon color="error" sx={{ ml: 1 }} />
                   </Box>
@@ -440,7 +387,7 @@ const DayPlanReport = () => {
                   </Typography>
                   <Box display="flex" alignItems="center">
                     <Typography variant="h5" component="div">
-                      {performanceMetrics.totalDefect}
+                      {metricsData?.totalDefect ?? 0}
                     </Typography>
                     <TrendingUpIcon color="error" sx={{ ml: 1 }} />
                   </Box>
@@ -458,12 +405,12 @@ const DayPlanReport = () => {
                     TOP 3 DEFECTS
                   </Typography>
                   <Typography variant="h5" component="div">
-                    {performanceMetrics.topDefects.length}
+                    {metricsData?.topDefects?.length ?? 0}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {performanceMetrics.topDefects.map((defect, index) => (
+                    {metricsData?.topDefects?.map((defect, index) => (
                       <div key={index}>{index + 1}. {defect}</div>
-                    ))}
+                    )) ?? "No data available"}
                   </Typography>
                 </CardContent>
               </Card>
@@ -486,7 +433,7 @@ const DayPlanReport = () => {
                   <DatePicker
                     label="Start Date"
                     value={startDate}
-                    onChange={(newValue: Dayjs | null) => setStartDate(newValue)}
+                    onChange={setStartDate}
                     slotProps={{
                       textField: {
                         variant: 'outlined',
@@ -502,7 +449,7 @@ const DayPlanReport = () => {
                   <DatePicker
                     label="End Date"
                     value={endDate}
-                    onChange={(newValue: Dayjs | null) => setEndDate(newValue)}
+                    onChange={setEndDate}
                     slotProps={{
                       textField: {
                         variant: 'outlined',
@@ -517,12 +464,12 @@ const DayPlanReport = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={fetchReports}
+                  onClick={handleFetchReports}
                   sx={{ height: '40px' }}
-                  disabled={loading}
-                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+                  disabled={isLoading}
+                  startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
                 >
-                  {loading ? "Loading..." : "View Reports"}
+                  {isLoading ? "Loading..." : "View Reports"}
                 </Button>
               </Grid>
             </Grid>
@@ -549,15 +496,21 @@ const DayPlanReport = () => {
 
           {/* DataGrid Table */}
           <Box sx={{ height: 500, backgroundColor: "#fff", p: 2, borderRadius: 1, boxShadow: 1 }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              paginationModel={paginationModel}
-              onPaginationModelChange={setPaginationModel}
-              pageSizeOptions={[5, 10, 25]}
-              checkboxSelection
-              loading={loading}
-            />
+            {isError ? (
+              <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                <Typography color="error">Error loading data</Typography>
+              </Box>
+            ) : (
+              <DataGrid
+                rows={reportsData || []}
+                columns={columns}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                pageSizeOptions={[5, 10, 25]}
+                checkboxSelection
+                loading={isLoading}
+              />
+            )}
           </Box>
         </Box>
         <Footer />

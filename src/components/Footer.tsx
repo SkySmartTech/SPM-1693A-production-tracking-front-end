@@ -1,9 +1,12 @@
+
 import { Box, Typography } from '@mui/material';
 
-export default function Footer() {
-  return (
-    <Box sx={{ textAlign: 'center', padding: '10px', bgcolor: '#ddd', marginTop: '20px' }}>
-      <Typography>2025 © Sky Smart Technology</Typography>
-    </Box>
-  );
-}
+const Footer = () => (
+  <Box sx={{ py: 2, textAlign: 'center', bgcolor: '#f1f1f1' }}>
+    <Typography variant="body2" color="textSecondary">
+      © 2025 Sky Smart Technology. All rights reserved.
+    </Typography>
+  </Box>
+);
+
+export default Footer;

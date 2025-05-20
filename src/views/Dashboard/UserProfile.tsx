@@ -28,7 +28,6 @@ import {
 } from "@mui/icons-material";
 import Sidebar from "../../components/Sidebar";
 import { motion } from "framer-motion";
-import Footer from "../../components/Footer";
 import { Menu, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -105,17 +104,6 @@ const UserProfile: React.FC = () => {
   };
 
   // Toggle fullscreen mode
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error('Error attempting to enable fullscreen:', err);
-      });
-    } else {
-      document.exitFullscreen().catch(err => {
-        console.error('Error attempting to exit fullscreen:', err);
-      });
-    }
-  };
 
   // Account menu handlers
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -229,7 +217,7 @@ const UserProfile: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: "full", width: "95vw", height: "100vh", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh"}}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -237,9 +225,8 @@ const UserProfile: React.FC = () => {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       />
-      <Box sx={{ flexGrow: 1, p: 3 }}>
-        {/* Top Navbar */}
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2, mb: 3 }}>
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
           <Toolbar>
             <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <MenuIcon />
@@ -248,9 +235,7 @@ const UserProfile: React.FC = () => {
               User Profile
             </Typography>
 
-            {/* Icons */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {/* Notifications dropdown */}
               <IconButton onClick={handleNotificationMenuOpen}>
                 <Badge badgeContent={notificationCount} color="error">
                   <NotificationsIcon />
@@ -293,11 +278,10 @@ const UserProfile: React.FC = () => {
                 </MenuItem>
               </Menu>
 
-              <IconButton onClick={toggleFullscreen}>
+              <IconButton onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}>
                 <FullscreenIcon />
               </IconButton>
 
-              {/* Account dropdown menu */}
               <IconButton onClick={handleAccountMenuOpen}>
                 <AccountCircleIcon />
               </IconButton>
@@ -458,7 +442,7 @@ const UserProfile: React.FC = () => {
           </DialogActions>
         </Dialog>
       </Box>
-      <Footer />
+      
 
       <Snackbar
         open={snackbar.open}
@@ -474,6 +458,7 @@ const UserProfile: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+  
     </Box>
   );
 };

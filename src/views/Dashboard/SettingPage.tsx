@@ -25,7 +25,6 @@ import {
   AccountCircle as AccountCircleIcon
 } from "@mui/icons-material";
 import Sidebar from "../../components/Sidebar";
-import Footer from "../../components/Footer";
 import { useCustomTheme } from "../../context/ThemeContext";
 import { Menu, MenuItem, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -90,7 +89,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <Box sx={{ display: "full", width: "95vw", height: "100vh", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -132,7 +131,7 @@ const SettingsPage = () => {
                 fontWeight: 600
               }}
             >
-              User Management
+              Settings
             </Typography>
 
             {/* Icons */}
@@ -270,7 +269,6 @@ const SettingsPage = () => {
           </Paper>
         </Box>
       </Box>
-      <Footer />
     </Box>
   );
 };

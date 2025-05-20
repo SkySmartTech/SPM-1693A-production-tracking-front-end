@@ -103,7 +103,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <Box sx={{ display: "flow", width: "100%", height: "100vh", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", width: "100%", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}

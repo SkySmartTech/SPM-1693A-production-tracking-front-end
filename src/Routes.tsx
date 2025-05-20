@@ -67,22 +67,26 @@ function AppRoutes() {
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegistrationPage />} />
-      </Route>
-
-      {/* Protected routes */}
-      <Route element={<ProtectedRoute />}>
+        <Route path="/dayPlan" element={<DayPlanUpload />} />
         <Route path="/home" element={<Dashboard />} />
         <Route path="/production" element={<ProductionUpdatePage />} />
         <Route path="/systemManagement" element={<SystemManagementPage />} />
         <Route path="/userProfile" element={<UserProfile />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/setting" element={<SettingPage />} />
-        <Route path="/dayPlan" element={<DayPlanUpload />} />
         <Route path="/dayReport" element={<DayPlanReport />} />
         <Route path="/daySummary" element={<DayPlanSummary />} />
         <Route path="/userManagement" element={<UserManagement />} />
         <Route path="/userAccessManagement" element={<UserAccessManagement />} />
         <Route path="/userAccessManagementSystem" element={<UserAccessManagementSystem />} />
+
+      </Route>
+
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute />}>
+      
+
+      
       </Route>
 
       {/* Redirects */}

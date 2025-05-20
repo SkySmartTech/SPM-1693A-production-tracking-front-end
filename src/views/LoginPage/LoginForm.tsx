@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -20,53 +20,56 @@ interface LoginFormProps {
   onForgotPasswordClick: () => void;
 }
 
+interface LoginFormData {
+  username: string;
+  password: string;
+}
+
+
 const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [isPending, setIsPending] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
+    setValue,
+  } = useForm<LoginFormData>({
     defaultValues: {
       username: "",
       password: "",
     },
   });
 
-  const loginMutation = useMutation({
+  useEffect(() => {
+    const rememberedUsername = localStorage.getItem("rememberedUsername");
+    if (rememberedUsername) {
+      setRememberMe(true);
+      setValue("username", rememberedUsername);
+    }
+  }, [setValue]);
+
+  const { mutate: loginMutation, isPending } = useMutation({
     mutationFn: login,
-    onMutate: () => setIsPending(true),
     onSuccess: (data) => {
-      // Store token
-      localStorage.setItem("token", data.access_token);
-
-      // Invalidate and refetch current user
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-
-      // Show success message
-      enqueueSnackbar(`Welcome back, ${data.user.name}!`, {
-        variant: "success"
-      });
-
-      // Navigate to home
+      queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      localStorage.setItem("token", data?.token);
+      enqueueSnackbar("Welcome Back!", { variant: "success" });
       navigate("/home");
     },
-    onError: (error) => {
-      enqueueSnackbar(error.message || "Login failed", {
-        variant: "error"
+    onError: () => {
+      enqueueSnackbar(`Login Failed`, {
+        variant: "error",
       });
     },
-    onSettled: () => setIsPending(false),
   });
 
-  const onSubmit = handleSubmit((data) => {
-    loginMutation.mutate(data);
-  });
+  const onSubmit = (data: { username: string; password: string }) => {
+    loginMutation(data);
+  };
 
   return (
     <Box sx={{ width: "100%", maxWidth: 500 }}>
@@ -83,22 +86,28 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
         </Typography>
       </CardContent>
 
-      <form onSubmit={onSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <TextField
-          label="Enter your username"
+          label="Username"
           fullWidth
           variant="outlined"
           margin="normal"
           {...register("username", {
-            required: "Username or email is required"
+            required: "Username is required",
+            minLength: {
+              value: 3,
+              message: "Username must be at least 3 characters",
+            },
           })}
           error={!!errors.username}
           helperText={errors.username?.message}
           sx={{ mb: 2 }}
+          autoComplete="username"
+          autoFocus
         />
 
         <TextField
-          label="Enter your password"
+          label="Password"
           type="password"
           fullWidth
           variant="outlined"
@@ -107,12 +116,13 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
             required: "Password is required",
             minLength: {
               value: 6,
-              message: "Password must be at least 6 characters"
-            }
+              message: "Password must be at least 6 characters",
+            },
           })}
           error={!!errors.password}
           helperText={errors.password?.message}
           sx={{ mb: 2 }}
+          autoComplete="current-password"
         />
 
         <FormControlLabel
@@ -133,7 +143,13 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
           color="primary"
           fullWidth
           disabled={isPending}
-          sx={{ mb: 2, height: 48 }}
+          sx={{ 
+            mb: 2, 
+            height: 48,
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            textTransform: 'none'
+          }}
         >
           {isPending ? (
             <CircularProgress size={24} color="inherit" />
@@ -142,16 +158,30 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
           )}
         </Button>
 
-        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Box sx={{ 
+          display: "flex", 
+          justifyContent: "space-between",
+          alignItems: 'center',
+          mt: 2
+        }}>
           <Button
             startIcon={<Info />}
             onClick={onForgotPasswordClick}
-            sx={{ textTransform: "none" }}
+            sx={{ 
+              textTransform: "none",
+              color: 'text.secondary'
+            }}
           >
             Forgot password?
           </Button>
-          <Link to="/register">
-            <Button startIcon={<AccountCircle />} sx={{ textTransform: "none" }}>
+          <Link to="/register" style={{ textDecoration: 'none' }}>
+            <Button 
+              startIcon={<AccountCircle />} 
+              sx={{ 
+                textTransform: "none",
+                color: 'primary.main'
+              }}
+            >
               Create account
             </Button>
           </Link>

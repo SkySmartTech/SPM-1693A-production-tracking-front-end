@@ -1,23 +1,24 @@
-import axios, { AxiosInstance, AxiosRequestHeaders } from "axios";
+import axios, { AxiosRequestHeaders } from "axios";
 
-// Create axios instance
-const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-});
-
-api.interceptors.request.use(
+axios.interceptors.request.use(
   function (config) {
+    config.baseURL = getBaseUrl();
+
     try {
       const token = `Bearer ${localStorage.getItem("token") || ""}`;
-      
+
       if (!config.headers) {
         config.headers = {} as AxiosRequestHeaders;
       }
 
       config.headers.Authorization = token;
+
       config.validateStatus = (status: number) => status >= 200 && status < 300;
     } catch (error) {
-      console.error("Error setting request config:", error);
+      console.error(
+        "Error setting Authorization header or validateStatus:",
+        error
+      );
     }
 
     return config;
@@ -27,12 +28,13 @@ api.interceptors.request.use(
   }
 );
 
-api.interceptors.response.use(
+function getBaseUrl(): string {
+  return import.meta.env.VITE_API_BASE_URL;
+}
+
+axios.interceptors.response.use(
   (response) => response,
   function (error) {
     return Promise.reject(error?.response ?? error);
   }
 );
-
-
-export { api };

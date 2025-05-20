@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  
   Button,
   Dialog,
   DialogTitle,
@@ -12,7 +11,8 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useMutation } from "@tanstack/react-query";
-import { forgotPassword } from "../../api/userApi"; 
+// import { forgotPassword } from "../../services/authService";
+
 interface ForgotPasswordDialogProps {
   open: boolean;
   handleClose: () => void;
@@ -23,25 +23,26 @@ const ForgotPasswordDialog = ({ open, handleClose }: ForgotPasswordDialogProps) 
   const [email, setEmail] = useState("");
   const [isPending, setIsPending] = useState(false);
 
- { const { mutate: forgotPasswordMutation } = useMutation({
-    mutationFn: forgotPassword,
-    onSuccess: () => {
-      enqueueSnackbar("Password reset instructions sent to your email!", { variant: "success" });
-      handleClose();
-    },
-    onError: () => {
-      enqueueSnackbar("Failed to send reset instructions. Please try again.", { variant: "error" });
-    },
-  });  
+  // const { mutate: forgotPasswordMutation } = useMutation({
+  //   mutationFn: forgotPassword,
+  //   onMutate: () => setIsPending(true),
+  //   onSuccess: () => {
+  //     enqueueSnackbar("Password reset instructions sent to your email!", { variant: "success" });
+  //     handleClose();
+  //   },
+  //   onError: (error: any) => {
+  //     enqueueSnackbar(error.message || "Failed to send reset instructions", { variant: "error" });
+  //   },
+  //   onSettled: () => setIsPending(false),
+  // });
 
-  const handleSubmit = () => {
-    if (!email) {
-      enqueueSnackbar("Please enter your email address.", { variant: "warning" });
-      return;
-    }
-    setIsPending(true);
-    forgotPasswordMutation({ email });
-  };   
+  // const handleSubmit = () => {
+  //   if (!email) {
+  //     enqueueSnackbar("Please enter your email address.", { variant: "warning" });
+  //     return;
+  //   }
+  //   forgotPasswordMutation(email);
+  // };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -68,7 +69,7 @@ const ForgotPasswordDialog = ({ open, handleClose }: ForgotPasswordDialogProps) 
           Cancel
         </Button>
         <Button
-          onClick={handleSubmit}
+          // onClick={handleSubmit}
           variant="contained"
           color="primary"
           disabled={isPending}
@@ -80,5 +81,5 @@ const ForgotPasswordDialog = ({ open, handleClose }: ForgotPasswordDialogProps) 
     </Dialog>
   );
 };
-}
-export default ForgotPasswordDialog; 
+
+export default ForgotPasswordDialog;

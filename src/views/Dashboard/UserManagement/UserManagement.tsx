@@ -24,7 +24,6 @@ import {
 } from "@mui/icons-material";
 import UserManagementTable from "./UserManagementTable";
 import Sidebar from "../../../components/Sidebar";
-import Footer from "../../../components/Footer";
 import { Menu, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -167,15 +166,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
 
   // Account menu handlers
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -211,7 +201,7 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: "full", width: "95vw", height: "100vh", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -219,13 +209,12 @@ const UserManagement: React.FC = () => {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       />
-      <Box sx={{ flexGrow: 1, bgcolor: "#f5f5f5", p: 2 }}>
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
           <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <MenuIcon sx={{ color: "black" }} />
+            <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <MenuIcon />
             </IconButton>
-
             <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
               User Management
             </Typography>
@@ -273,7 +262,7 @@ const UserManagement: React.FC = () => {
                 </MenuItem>
               </Menu>
 
-              <IconButton onClick={toggleFullscreen}>
+              <IconButton onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}>
                 <FullscreenIcon />
               </IconButton>
 
@@ -387,7 +376,6 @@ const UserManagement: React.FC = () => {
           </Alert>
         </Snackbar>
       </Box>
-      <Footer/>
     </Box>
   );
 };

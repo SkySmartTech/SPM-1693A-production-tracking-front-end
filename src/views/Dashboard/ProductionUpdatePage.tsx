@@ -17,7 +17,11 @@ import {
   Button,
   SelectChangeEvent,
   Snackbar,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -33,14 +37,15 @@ import { Delete } from '@mui/icons-material';
 import axios from 'axios';
 import Sidebar from "../../components/Sidebar";
 import Footer from '../../components/Footer';
-import { Menu, MenuItem, Badge } from "@mui/material";  
-import { useNavigate } from "react-router-dom"; 
+import { Menu, MenuItem, Badge } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 interface ProductionData {
   buyer: string;
   gg: string;
   smv: string;
   presentCarder: string;
+  reworkCount: number;
   successCount: number;
   defectCount: number;
   hourlyData: number[];
@@ -62,11 +67,18 @@ interface DropdownOptions {
   checkPoints: string[];
 }
 
+interface DefectReworkData {
+  parts: string[];
+  locations: string[];
+  defectCodes: string[];
+}
+
 const defaultProductionData: ProductionData = {
   buyer: 'N/A',
   gg: '0',
   smv: '0',
   presentCarder: '0',
+  reworkCount: 0,
   successCount: 0,
   defectCount: 0,
   hourlyData: [0, 0, 0, 0, 0, 0, 0, 0]
@@ -81,16 +93,22 @@ const ProductionUpdatePage = () => {
     sizes: [],
     checkPoints: []
   });
+  const [defectReworkOptions, setDefectReworkOptions] = useState<DefectReworkData>({
+    parts: [],
+    locations: [],
+    defectCodes: []
+  });
   const [loading, setLoading] = useState({
     data: false,
-    options: true, // Start with options loading true
-    submit: false
+    options: true,
+    submit: false,
+    defectReworkOptions: false
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); 
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null); 
-  const [notificationCount] = useState(3); 
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
+  const [notificationCount] = useState(3);
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>({
     teamNo: '',
@@ -103,6 +121,15 @@ const ProductionUpdatePage = () => {
     open: false,
     message: '',
     severity: 'success' as 'success' | 'error'
+  });
+  const [dialogOpen, setDialogOpen] = useState({
+    rework: false,
+    defect: false
+  });
+  const [formData, setFormData] = useState({
+    part: '',
+    location: '',
+    defectCode: ''
   });
 
   const API_BASE_URL = 'http://localhost:8000/api';
@@ -118,10 +145,9 @@ const ProductionUpdatePage = () => {
           sizes: response.data.sizes || [],
           checkPoints: response.data.checkPoints || []
         };
-        
+
         setDropdownOptions(options);
-        
-        // Set initial filters if options are available
+
         if (options.teams.length > 0) {
           setFilters({
             teamNo: options.teams[0],
@@ -143,9 +169,30 @@ const ProductionUpdatePage = () => {
   }, []);
 
   useEffect(() => {
+    const fetchDefectReworkOptions = async () => {
+      try {
+        setLoading(prev => ({ ...prev, defectReworkOptions: true }));
+        const response = await axios.get(`${API_BASE_URL}/defect-rework-options`);
+        setDefectReworkOptions({
+          parts: response.data.parts || [],
+          locations: response.data.locations || [],
+          defectCodes: response.data.defectCodes || []
+        });
+      } catch (error) {
+        console.error('Error fetching defect/rework options:', error);
+        showSnackbar('Failed to load defect/rework options', 'error');
+      } finally {
+        setLoading(prev => ({ ...prev, defectReworkOptions: false }));
+      }
+    };
+
+    fetchDefectReworkOptions();
+  }, []);
+
+  useEffect(() => {
     const fetchProductionData = async () => {
-      if (!filters.teamNo) return; // Don't fetch until we have initial filters
-      
+      if (!filters.teamNo) return;
+
       try {
         setLoading(prev => ({ ...prev, data: true }));
         const response = await axios.get(`${API_BASE_URL}/production-data`, {
@@ -168,7 +215,7 @@ const ProductionUpdatePage = () => {
     const { name, value } = event.target as { name: keyof Filters; value: string };
     const newFilters = { ...filters, [name]: value };
     setFilters(newFilters);
-    
+
     try {
       setLoading(prev => ({ ...prev, submit: true }));
       const response = await axios.get(`${API_BASE_URL}/production-data`, {
@@ -178,6 +225,43 @@ const ProductionUpdatePage = () => {
     } catch (error) {
       console.error('Error updating data with new filters', error);
       showSnackbar('Failed to update data with new filters', 'error');
+    } finally {
+      setLoading(prev => ({ ...prev, submit: false }));
+    }
+  };
+
+  const handleFormChange = (event: SelectChangeEvent<string>) => {
+    const { name, value } = event.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleDialogOpen = (type: 'rework' | 'defect') => {
+    setDialogOpen(prev => ({ ...prev, [type]: true }));
+  };
+
+  const handleDialogClose = (type: 'rework' | 'defect') => {
+    setDialogOpen(prev => ({ ...prev, [type]: false }));
+    setFormData({ part: '', location: '', defectCode: '' });
+  };
+
+  const handleSubmit = async (type: 'rework' | 'defect') => {
+    try {
+      setLoading(prev => ({ ...prev, submit: true }));
+      await axios.post(`${API_BASE_URL}/${type}-submit`, {
+        ...formData,
+        ...filters
+      });
+      showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} submitted successfully`, 'success');
+      handleDialogClose(type);
+
+      // Refresh production data
+      const response = await axios.get(`${API_BASE_URL}/production-data`, {
+        params: filters
+      });
+      setData(response.data || defaultProductionData);
+    } catch (error) {
+      console.error(`Error submitting ${type}:`, error);
+      showSnackbar(`Failed to submit ${type}`, 'error');
     } finally {
       setLoading(prev => ({ ...prev, submit: false }));
     }
@@ -233,14 +317,14 @@ const ProductionUpdatePage = () => {
   };
 
   return (
-    <Box sx={{ display: "full", width: "95vw", height: "100vh", minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-      />      
+      />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
           <Toolbar>
@@ -250,7 +334,7 @@ const ProductionUpdatePage = () => {
 
             <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
               Production Update
-            </Typography>       
+            </Typography>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
               <IconButton onClick={handleNotificationMenuOpen}>
@@ -394,38 +478,47 @@ const ProductionUpdatePage = () => {
                       title: 'Success',
                       value: data.successCount,
                       gradient: 'linear-gradient(to right, #00BA57, #006931)',
-                      icon: <AssignmentTurnedIn sx={{ fontSize: 40, opacity: 0.8 }} />
+                      icon: <AssignmentTurnedIn sx={{ fontSize: 40, opacity: 0.8 }} />,
+                      onClick: null
                     },
                     {
-                      title: 'Success',
-                      value: data.successCount,
+                      title: 'Rework',
+                      value: data.reworkCount,
                       gradient: 'linear-gradient(to right, #FFD900, #DB5B00)',
-                      icon: <StyleIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+                      icon: <StyleIcon sx={{ fontSize: 40, opacity: 0.8 }} />,
+                      onClick: () => handleDialogOpen('rework')
                     },
                     {
                       title: 'Defect',
                       value: data.defectCount,
                       gradient: 'linear-gradient(to right, #EB0004, #960003)',
-                      icon: <Delete sx={{ fontSize: 40, opacity: 0.8 }} />
+                      icon: <Delete sx={{ fontSize: 40, opacity: 0.8 }} />,
+                      onClick: () => handleDialogOpen('defect')
                     }
                   ].map((status, index) => (
                     <Grid item xs={12} md={4} key={index}>
-                      <Box sx={{
-                        p: 3,
-                        borderRadius: '12px',
-                        background: status.gradient,
-                        color: 'white',
-                        boxShadow: 3,
-                        height: 120,
-                        width: 300,
-                        display: 'flex',
-                        marginBottom: 5,
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        position: 'relative',
-                        transition: 'transform 0.3s',
-                        '&:hover': { transform: 'scale(1.02)' }
-                      }}>
+                      <Box
+                        sx={{
+                          p: 3,
+                          borderRadius: '12px',
+                          background: status.gradient,
+                          color: 'white',
+                          boxShadow: 3,
+                          height: 120,
+                          width: 300,
+                          display: 'flex',
+                          marginBottom: 5,
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          position: 'relative',
+                          transition: 'transform 0.3s',
+                          '&:hover': {
+                            transform: 'scale(1.02)',
+                            cursor: status.onClick ? 'pointer' : 'default'
+                          }
+                        }}
+                        onClick={status.onClick || undefined}
+                      >
                         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                           {status.title}
                         </Typography>
@@ -469,22 +562,176 @@ const ProductionUpdatePage = () => {
           )}
         </Box>
         <Footer />
-      </Box>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
+        {/* Rework Dialog */}
+        <Dialog
+          open={dialogOpen.rework}
+          onClose={() => handleDialogClose('rework')}
+          sx={{
+            '& .MuiDialog-paper': {
+              width: '400px', 
+              maxWidth: 'none' 
+            }
+          }}
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <DialogTitle>Details for Rework</DialogTitle>
+          <DialogContent>
+            <Box sx={{ textAlign: 'center', my: 2 }}>
+              <img
+                src="/images/tshirt.png"
+                alt="Tshirt"
+                style={{ width: '100px', height: '100px' }}
+              />
+            </Box>
+            <FormControl fullWidth sx={{ my: 2 }}>
+              <InputLabel>Part</InputLabel>
+              <Select
+                name="part"
+                value={formData.part}
+                label="Part"
+                onChange={handleFormChange}
+                disabled={loading.defectReworkOptions}
+              >
+                {defectReworkOptions.parts.map((part, index) => (
+                  <MenuItem key={index} value={part}>{part}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={{ my: 2 }}>
+              <InputLabel>Location</InputLabel>
+              <Select
+                name="location"
+                value={formData.location}
+                label="Location"
+                onChange={handleFormChange}
+                disabled={loading.defectReworkOptions}
+              >
+                {defectReworkOptions.locations.map((location, index) => (
+                  <MenuItem key={index} value={location}>{location}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={{ my: 2 }}>
+              <InputLabel>Defect Code</InputLabel>
+              <Select
+                name="defectCode"
+                value={formData.defectCode}
+                label="Defect Code"
+                onChange={handleFormChange}
+                disabled={loading.defectReworkOptions}
+              >
+                {defectReworkOptions.defectCodes.map((code, index) => (
+                  <MenuItem key={index} value={code}>{code}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => handleDialogClose('rework')} disabled={loading.submit}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleSubmit('rework')}
+              disabled={loading.submit || !formData.part || !formData.location || !formData.defectCode}
+              variant="contained"
+            >
+              {loading.submit ? <CircularProgress size={24} /> : 'Submit'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Defect Dialog */}
+        <Dialog
+          open={dialogOpen.defect}
+          onClose={() => handleDialogClose('defect')}
+          sx={{
+            '& .MuiDialog-paper': {
+              width: '400px', 
+              maxWidth: 'none' 
+            }
+          }}
+        >
+          <DialogTitle>Details for Defect</DialogTitle>
+          <DialogContent>
+            <Box sx={{ textAlign: 'center', my: 2 }}>
+              <img
+                src="/images/tshirt.png"
+                alt="T-shirt"
+                style={{ width: '100px', height: '100px' }}
+              />
+            </Box>
+            <FormControl fullWidth sx={{ my: 2 }}>
+              <InputLabel>Part</InputLabel>
+              <Select
+                name="part"
+                value={formData.part}
+                label="Part"
+                onChange={handleFormChange}
+                disabled={loading.defectReworkOptions}
+              >
+                {defectReworkOptions.parts.map((part, index) => (
+                  <MenuItem key={index} value={part}>{part}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={{ my: 2 }}>
+              <InputLabel>Location</InputLabel>
+              <Select
+                name="location"
+                value={formData.location}
+                label="Location"
+                onChange={handleFormChange}
+                disabled={loading.defectReworkOptions}
+              >
+                {defectReworkOptions.locations.map((location, index) => (
+                  <MenuItem key={index} value={location}>{location}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={{ my: 2 }}>
+              <InputLabel>Defect Code</InputLabel>
+              <Select
+                name="defectCode"
+                value={formData.defectCode}
+                label="Defect Code"
+                onChange={handleFormChange}
+                disabled={loading.defectReworkOptions}
+              >
+                {defectReworkOptions.defectCodes.map((code, index) => (
+                  <MenuItem key={index} value={code}>{code}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => handleDialogClose('defect')} disabled={loading.submit}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleSubmit('defect')}
+              disabled={loading.submit || !formData.part || !formData.location || !formData.defectCode}
+              variant="contained"
+            >
+              {loading.submit ? <CircularProgress size={24} /> : 'Submit'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
     </Box>
   );
 };

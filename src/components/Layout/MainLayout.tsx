@@ -11,10 +11,10 @@ const MainLayout = () => {
   const [hovered, setHovered] = useState(false);
 
   return (
-    <Box sx={{ display: "inline" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />
-      <Sidebar 
-        open={open} 
+      <Sidebar
+        open={open || hovered}
         setOpen={setOpen}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -23,18 +23,21 @@ const MainLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          width: `calc(100% - ${open || hovered ? drawerWidth : collapsedWidth}px)`,
-          transition: (theme) => theme.transitions.create(['width', 'margin'], {
+          width: `calc(100vw - ${open || hovered ? drawerWidth : collapsedWidth}px)`,
+          height: "100vh",
+          overflow: "auto",
+          transition: (theme) => theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          ml: `${open || hovered ? drawerWidth : collapsedWidth}px`
+          marginLeft: `${open || hovered ? drawerWidth : collapsedWidth}px`,
+          p: 3,
+          backgroundColor: "#f5f5f5"
         }}
       >
         <Outlet />
       </Box>
     </Box>
-    
   );
 };
 

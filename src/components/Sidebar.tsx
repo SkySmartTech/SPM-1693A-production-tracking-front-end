@@ -36,9 +36,10 @@ interface SidebarProps {
   onMouseLeave?: () => void;
 }
 
-const drawerWidth = 240;
+const drawerWidth = 250;
+const collapsedWidth = 56;
 
-const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
+const Sidebar = ({ open, setOpen, onMouseEnter, onMouseLeave }: SidebarProps) => {
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({});
   const navigate = useNavigate();
   const { mode } = useThemeMode();
@@ -137,196 +138,177 @@ const Sidebar = ({ open, onMouseEnter, onMouseLeave }: SidebarProps) => {
     } else if (item.action) {
       item.action();
     }
+    setOpen(false);
   };
 
   return (
-    <Box
+    <Drawer
+      variant="permanent"
       sx={{
-        width: { sm: drawerWidth },
-        flexShrink: { sm: 0 },
-        '&:hover .MuiDrawer-paper': {
-          width: `${drawerWidth}px !important`,
-        }
+        width: open ? drawerWidth : collapsedWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: open ? drawerWidth : collapsedWidth,
+          boxSizing: 'border-box',
+          backgroundColor: mode === 'dark' ? "#1e1e1e" : "#ffffff",
+          color: mode === 'dark' ? "#ffffff" : "#000000",
+          transition: (theme) => theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          overflowX: 'hidden',
+          borderRight: 'none',
+        },
       }}
-      aria-label="sidebar"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <Drawer
-        variant="permanent"
+      <Toolbar />
+      <Box
         sx={{
-          display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': {
-            boxSizing: 'border-box',
-            width: open ? drawerWidth : 56,
-            backgroundColor: mode === 'dark' ? "#1e1e1e" : "#ffffff",
-            color: mode === 'dark' ? "#ffffff" : "#000000",
-            transition: "width 0.3s ease",
-            overflowX: "hidden",
-            '&:hover': {
-              width: `${drawerWidth}px !important`,
-            },
-          },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          py: open ? 2 : 1,
+          borderBottom: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)',
+          mb: 1,
+          height: 'auto',
+          minHeight: open ? 100 : 64
         }}
-        open
       >
-        <Toolbar />
-        <Box
+        <Avatar
+          src="/images/logo.png"
+          alt="Company Logo"
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            py: 2,
-            borderBottom: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)',
-            mb: 1
+            width: open ? 80 : 40,
+            height: open ? 80 : 40,
+            transition: 'all 0.3s ease',
           }}
-        >
-          <Avatar
-            src="/images/logo.png"
-            alt="Company Logo"
-            sx={{
-              width: open ? 80 : 40,
-              height: open ? 80 : 40,
-              transition: 'all 0.3s ease',
-              mb: 1
-            }}
-          />
+        />
+      </Box>
 
-          {open && (
-            <Box
-              component="span"
+      <List sx={{ p: 0 }}>
+        {sidebarItems.map((item, index) => {
+          if (item.type === "headline") {
+            return (
+              <ListItemText
+                key={index}
+                primary={item.text}
+                sx={{
+                  px: 2.5,
+                  py: 1,
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  color: mode === 'dark' ? "rgba(255, 255, 255, 0.7)" : "text.secondary",
+                  display: open ? "block" : "none",
+                }}
+              />
+            );
+          }
+
+          if (item.type === "divider") {
+            return (
+              <Divider
+                key={index}
+                sx={{
+                  my: 1,
+                  backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"
+                }}
+              />
+            );
+          }
+
+          if (item.type === "nested") {
+            return (
+              <div key={index}>
+                <ListItemButton
+                  onClick={() => toggleSection(item.title!)}
+                  sx={{
+                    minHeight: 48,
+                    px: 2.5,
+                    "&:hover": {
+                      backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
+                    }
+                  }}
+                >
+                  <StyledListItemIcon>{item.icon}</StyledListItemIcon>
+                  {open && (
+                    <>
+                      <ListItemText
+                        primary={item.title}
+                        primaryTypographyProps={{
+                          fontSize: "0.875rem",
+                          color: mode === 'dark' ? "#ffffff" : "#000000"
+                        }}
+                      />
+                      {openSections[item.title!] ? (
+                        <ExpandLess fontSize="small" />
+                      ) : (
+                        <ExpandMore fontSize="small" />
+                      )}
+                    </>
+                  )}
+                </ListItemButton>
+                <Collapse in={openSections[item.title!] && open} timeout="auto" unmountOnExit>
+                  <List disablePadding sx={{ pl: 2 }}>
+                    {item.children?.map((child, childIndex) => (
+                      <ListItemButton
+                        key={childIndex}
+                        onClick={() => handleItemClick(child)}
+                        sx={{
+                          pl: 4,
+                          minHeight: 48,
+                          "&:hover": {
+                            backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
+                          }
+                        }}
+                      >
+                        <StyledListItemIcon>{child.icon}</StyledListItemIcon>
+                        {open && (
+                          <ListItemText
+                            primary={child.title}
+                            primaryTypographyProps={{
+                              fontSize: "0.875rem",
+                              color: mode === 'dark' ? "#ffffff" : "#000000"
+                            }}
+                          />
+                        )}
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Collapse>
+              </div>
+            );
+          }
+
+          return (
+            <ListItemButton
+              key={index}
+              onClick={() => handleItemClick(item)}
               sx={{
-                fontWeight: 600,
-                fontSize: '1rem',
-                color: mode === 'dark' ? '#ffffff' : '#000000'
+                minHeight: 48,
+                px: 2.5,
+                "&:hover": {
+                  backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
+                }
               }}
             >
-              BuildTeck Asia
-            </Box>
-          )}
-        </Box>
-        <List sx={{ p: 0 }}>
-          {sidebarItems.map((item, index) => {
-            if (item.type === "headline") {
-              return (
+              <StyledListItemIcon>{item.icon}</StyledListItemIcon>
+              {open && (
                 <ListItemText
-                  key={index}
-                  primary={item.text}
-                  sx={{
-                    px: 2.5,
-                    py: 1,
-                    fontSize: "0.75rem",
-                    fontWeight: 500,
-                    color: mode === 'dark' ? "rgba(255, 255, 255, 0.7)" : "text.secondary",
-                    display: open ? "block" : "none",
+                  primary={item.title}
+                  primaryTypographyProps={{
+                    fontSize: "0.875rem",
+                    color: mode === 'dark' ? "#ffffff" : "#000000"
                   }}
                 />
-              );
-            }
-
-            if (item.type === "divider") {
-              return (
-                <Divider
-                  key={index}
-                  sx={{
-                    my: 1,
-                    backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"
-                  }}
-                />
-              );
-            }
-
-            if (item.type === "nested") {
-              return (
-                <div key={index}>
-                  <ListItemButton
-                    onClick={() => toggleSection(item.title!)}
-                    sx={{
-                      minHeight: 48,
-                      px: 2.5,
-                      "&:hover": {
-                        backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
-                      }
-                    }}
-                  >
-                    <StyledListItemIcon>{item.icon}</StyledListItemIcon>
-                    {open && (
-                      <>
-                        <ListItemText
-                          primary={item.title}
-                          primaryTypographyProps={{
-                            fontSize: "0.875rem",
-                            color: mode === 'dark' ? "#ffffff" : "#000000"
-                          }}
-                        />
-                        {openSections[item.title!] ? (
-                          <ExpandLess fontSize="small" />
-                        ) : (
-                          <ExpandMore fontSize="small" />
-                        )}
-                      </>
-                    )}
-                  </ListItemButton>
-                  <Collapse in={openSections[item.title!] && open} timeout="auto" unmountOnExit>
-                    <List disablePadding sx={{ pl: 2 }}>
-                      {item.children?.map((child, childIndex) => (
-                        <ListItemButton
-                          key={childIndex}
-                          onClick={() => handleItemClick(child)}
-                          sx={{
-                            pl: 4,
-                            minHeight: 48,
-                            "&:hover": {
-                              backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
-                            }
-                          }}
-                        >
-                          <StyledListItemIcon>{child.icon}</StyledListItemIcon>
-                          {open && (
-                            <ListItemText
-                              primary={child.title}
-                              primaryTypographyProps={{
-                                fontSize: "0.875rem",
-                                color: mode === 'dark' ? "#ffffff" : "#000000"
-                              }}
-                            />
-                          )}
-                        </ListItemButton>
-                      ))}
-                    </List>
-                  </Collapse>
-                </div>
-              );
-            }
-
-            return (
-              <ListItemButton
-                key={index}
-                onClick={() => handleItemClick(item)}
-                sx={{
-                  minHeight: 48,
-                  px: 2.5,
-                  "&:hover": {
-                    backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
-                  }
-                }}
-              >
-                <StyledListItemIcon>{item.icon}</StyledListItemIcon>
-                {open && (
-                  <ListItemText
-                    primary={item.title}
-                    primaryTypographyProps={{
-                      fontSize: "0.875rem",
-                      color: mode === 'dark' ? "#ffffff" : "#000000"
-                    }}
-                  />
-                )}
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </Drawer>
-    </Box>
+              )}
+            </ListItemButton>
+          );
+        })}
+      </List>
+    </Drawer>
   );
 };
 

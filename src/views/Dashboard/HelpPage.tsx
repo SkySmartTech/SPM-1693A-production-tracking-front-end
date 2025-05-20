@@ -28,9 +28,9 @@ import {
   Menu as MenuIcon,
   Notifications as NotificationsIcon,
   Fullscreen as FullscreenIcon,
+  AccountCircle as AccountCircleIcon
 } from "@mui/icons-material";
 import Sidebar from "../../components/Sidebar"; // Ensure Sidebar component exists
-import Footer from "../../components/Footer";
 import { Menu, MenuItem, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -43,15 +43,6 @@ const HelpPage = () => {
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
 
   // Account menu handlers
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -102,8 +93,7 @@ const HelpPage = () => {
   const filteredItems = searchTerm ? allItems.filter(item => item.toLowerCase().includes(searchTerm.toLowerCase())) : [];
 
   return (
-    <Box sx={{ display: "full", width: "95vw", height: "100vh", minHeight: "100vh" }}>
-      {/* Sidebar */}
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -111,22 +101,17 @@ const HelpPage = () => {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       />
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, bgcolor: "#f5f5f5", p: 2 }}>
-        {/* AppBar */}
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
           <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <MenuIcon sx={{ color: "black" }} />
+            <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <MenuIcon />
             </IconButton>
-
             <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
-              Help & Support
+              Help
             </Typography>
 
-            {/* Icons */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {/* Notifications dropdown */}
               <IconButton onClick={handleNotificationMenuOpen}>
                 <Badge badgeContent={notificationCount} color="error">
                   <NotificationsIcon />
@@ -169,13 +154,12 @@ const HelpPage = () => {
                 </MenuItem>
               </Menu>
 
-              <IconButton onClick={toggleFullscreen}>
+              <IconButton onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}>
                 <FullscreenIcon />
               </IconButton>
 
-              {/* Account dropdown menu */}
               <IconButton onClick={handleAccountMenuOpen}>
-                <AccountCircle />
+                <AccountCircleIcon />
               </IconButton>
               <Menu
                 anchorEl={anchorEl}
@@ -194,7 +178,6 @@ const HelpPage = () => {
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
             </Box>
-
           </Toolbar>
         </AppBar>
 
@@ -270,7 +253,6 @@ const HelpPage = () => {
           </Grid>
         </Box>
       </Box>
-      <Footer />
     </Box>
   );
 };

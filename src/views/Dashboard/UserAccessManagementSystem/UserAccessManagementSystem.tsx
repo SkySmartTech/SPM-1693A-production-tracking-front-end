@@ -4,7 +4,8 @@ import {
     MenuItem, Select, Typography, SelectChangeEvent,
     AppBar, Toolbar, IconButton,
     Snackbar, Alert, Paper, Accordion, AccordionSummary,
-    AccordionDetails, Divider
+    AccordionDetails, Divider,
+    CssBaseline
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
@@ -12,7 +13,6 @@ import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Sidebar from "../../../components/Sidebar";
-import Footer from "../../../components/Footer";
 import { Menu, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -179,7 +179,7 @@ const UserAccessManagementSystem = () => {
     const [roleType, setRoleType] = useState<'admin' | 'manager' | 'supplier'>('admin');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [hovered, setHovered] = useState(false);
-    const [, setIsFullscreen] = useState(false);
+    const [] = useState(false);
     const [loading, setLoading] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
@@ -222,23 +222,6 @@ const UserAccessManagementSystem = () => {
         setSnackbar({ open: true, message, severity });
     };
 
-    const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen()
-                .then(() => setIsFullscreen(true))
-                .catch(err => {
-                    console.error('Error attempting to enable fullscreen:', err);
-                    showSnackbar("Failed to enter fullscreen", "error");
-                });
-        } else {
-            document.exitFullscreen()
-                .then(() => setIsFullscreen(false))
-                .catch(err => {
-                    console.error('Error attempting to exit fullscreen:', err);
-                    showSnackbar("Failed to exit fullscreen", "error");
-                });
-        }
-    };
     // Account menu handlers
     const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -465,30 +448,25 @@ const UserAccessManagementSystem = () => {
     );
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", width: "95vw", height: "100vh", minHeight: "100vh" }}>
+        <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
+            <CssBaseline />
             <Sidebar
                 open={sidebarOpen || hovered}
                 setOpen={setSidebarOpen}
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
             />
-            {/* Main Content */}
-            <Box sx={{ flexGrow: 1, bgcolor: "#f5f5f5" }}>
-                {/* AppBar */}
+            <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
                 <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
                     <Toolbar>
-                        <IconButton edge="start" color="inherit" onClick={() => setSidebarOpen(!sidebarOpen)}>
-                            <MenuIcon sx={{ color: "black" }} />
+                        <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                            <MenuIcon />
                         </IconButton>
-
                         <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
-                            Day Plan Report
+                            User Access Management System
                         </Typography>
 
-
-                        {/* Icons */}
                         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                            {/* Notifications dropdown */}
                             <IconButton onClick={handleNotificationMenuOpen}>
                                 <Badge badgeContent={notificationCount} color="error">
                                     <NotificationsIcon />
@@ -531,11 +509,10 @@ const UserAccessManagementSystem = () => {
                                 </MenuItem>
                             </Menu>
 
-                            <IconButton onClick={toggleFullscreen}>
+                            <IconButton onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}>
                                 <FullscreenIcon />
                             </IconButton>
 
-                            {/* Account dropdown menu */}
                             <IconButton onClick={handleAccountMenuOpen}>
                                 <AccountCircleIcon />
                             </IconButton>
@@ -556,7 +533,6 @@ const UserAccessManagementSystem = () => {
                                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
                             </Menu>
                         </Box>
-
                     </Toolbar>
                 </AppBar>
 
@@ -650,7 +626,6 @@ const UserAccessManagementSystem = () => {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
-            <Footer />
         </Box>
     );
 };

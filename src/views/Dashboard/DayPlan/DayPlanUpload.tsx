@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
-  Box, Typography, Button, AppBar, Toolbar, IconButton, 
+  Box, Typography, Button, AppBar, Toolbar, IconButton,
   CssBaseline, Menu, MenuItem,
   Divider
 } from "@mui/material";
@@ -11,20 +11,25 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Sidebar from "../../../components/Sidebar";
-import Footer from "../../../components/Footer";
 import { useNavigate } from "react-router-dom";
 import Badge from '@mui/material/Badge';
+import { fetchDayPlans } from "../../../api/dayPlansApi";
+import { useQuery } from "@tanstack/react-query";
 
 const DayPlanUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [rows, setRows] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
-  const navigate = useNavigate(); // Navigation hook
+  const navigate = useNavigate();
 
+  // Fetch data using React Query
+  const { data: dayPlansData, isLoading, isError } = useQuery({
+    queryKey: ["day-plans"],
+    queryFn: fetchDayPlans,
+  });
 
   // Handle file selection
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,12 +49,11 @@ const DayPlanUpload: React.FC = () => {
     formData.append("file", file);
 
     try {
-      const response = await axios.post("http://localhost:5000/upload", formData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (response.data.success) {
-        fetchData();
         alert("File uploaded successfully!");
       } else {
         alert("Upload failed.");
@@ -59,21 +63,6 @@ const DayPlanUpload: React.FC = () => {
       alert("An error occurred.");
     }
   };
-
-  // Fetch data from API after upload
-  const fetchData = async () => {
-    try {
-      const response = await axios.get("http://localhost:5000/day-plans");
-      setRows(response.data);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-
-  // Fetch existing data on component mount
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   // Define DataGrid columns
   const columns: GridColDef[] = [
@@ -96,15 +85,6 @@ const DayPlanUpload: React.FC = () => {
   ];
 
   // Toggle fullscreen mode
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
 
   // Account menu handlers
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -139,10 +119,8 @@ const DayPlanUpload: React.FC = () => {
     handleNotificationMenuClose();
   };
 
-
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", width: "95vw", height: "100vh", minHeight: "100vh" }}>
-      {/* Sidebar */}
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -150,23 +128,17 @@ const DayPlanUpload: React.FC = () => {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       />
-
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, bgcolor: "#f5f5f5", p: 2 }}>
-        {/* AppBar */}
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
           <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <MenuIcon sx={{ color: "black" }} />
+            <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <MenuIcon />
             </IconButton>
-
             <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
-              Day Plan
+              Day Plan Upload
             </Typography>
 
-            {/* Icons */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {/* Notifications dropdown */}
               <IconButton onClick={handleNotificationMenuOpen}>
                 <Badge badgeContent={notificationCount} color="error">
                   <NotificationsIcon />
@@ -209,11 +181,10 @@ const DayPlanUpload: React.FC = () => {
                 </MenuItem>
               </Menu>
 
-              <IconButton onClick={toggleFullscreen}>
+              <IconButton onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}>
                 <FullscreenIcon />
               </IconButton>
 
-              {/* Account dropdown menu */}
               <IconButton onClick={handleAccountMenuOpen}>
                 <AccountCircleIcon />
               </IconButton>
@@ -236,14 +207,13 @@ const DayPlanUpload: React.FC = () => {
             </Box>
           </Toolbar>
         </AppBar>
-
         {/* Content */}
-        <Box sx={{ padding: 3, backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
-          <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 2 }}>
+        <Box sx={{ padding: 5, backgroundColor: "#f9f9f9", borderRadius: "8px", marginBottom: 5 }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 5 }}>
             Day Plan Upload
           </Typography>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, marginBottom: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, marginBottom: 5 }}>
             <input
               type="file"
               accept=".xlsx"
@@ -266,11 +236,25 @@ const DayPlanUpload: React.FC = () => {
             </Button>
           </Box>
           <Box sx={{ height: 400, width: "100%", backgroundColor: "white", borderRadius: "8px", overflowX: "auto" }}>
-            <DataGrid rows={rows} columns={columns} pageSizeOptions={[5, 10, 20]} />
+            {isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <Typography>Loading data...</Typography>
+              </Box>
+            ) : isError ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <Typography color="error">Error loading data</Typography>
+              </Box>
+            ) : (
+              <DataGrid
+                rows={dayPlansData || []}
+                columns={columns}
+                pageSizeOptions={[5, 10, 20]}
+              />
+            )}
           </Box>
         </Box>
       </Box>
-      <Footer />
+
     </Box>
   );
 };
