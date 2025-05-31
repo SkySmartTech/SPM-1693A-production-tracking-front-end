@@ -577,7 +577,54 @@ const SystemManagement = () => {
             />
           </>
         );
-      case 4: // Defects
+      case 4: 
+      // Defects
+        return (
+          <>
+            <TextField
+              fullWidth
+              label="Style No"
+              name="style_no"
+              value={formData.style_no || ''}
+              onChange={handleFormChange}
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Operation"
+              name="operation"
+              value={formData.operation || ''}
+              onChange={handleFormChange}
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Code No"
+              name="code_no"
+              value={formData.code_no || ''}
+              onChange={handleFormChange}
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Defect Code"
+              name="defect_code"
+              value={formData.defect_code || ''}
+              onChange={handleFormChange}
+              margin="normal"
+            />
+            <TextField
+              fullWidth
+              label="Status"
+              name="status"
+              value={formData.status || ''}
+              onChange={handleFormChange}
+              margin="normal"
+            />
+          </>
+        );
+        // chkpoint    id,chkpoint name,creted , updated 
+       case 5: 
         return (
           <>
             <TextField

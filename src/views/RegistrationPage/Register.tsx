@@ -1,25 +1,9 @@
-import { useState } from "react";
 import { Box, Card, Stack } from "@mui/material";
-import RegisterForm from "./RegisterForm"; 
+import RegisterForm from "./RegisterForm";
+import { useSnackbar } from "notistack";
 
 const Register = () => {
-  const [form, setForm] = useState({
-    id: "",
-    epf: "",
-    employeeName: "",
-    username: "",
-    password: "",
-    department: "",
-    contact: "",
-    email: "",
-    userType: "",
-    availability: "",
-    status: "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const { enqueueSnackbar } = useSnackbar();
 
   return (
     <Stack
@@ -70,13 +54,19 @@ const Register = () => {
           sx={{
             flex: 1,
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "center",
             alignItems: "center",
             padding: 4,
           }}
         >
-          {/* Use the RegisterForm component here */}
-          <RegisterForm form={form} handleChange={handleChange} />
+          <RegisterForm 
+            onSuccess={() => {
+              enqueueSnackbar("Registration successful!", { variant: "success" });
+            }}
+            onError={(error) => {
+              enqueueSnackbar(error || "Registration failed", { variant: "error" });
+            }}
+          />
         </Box>
       </Card>
     </Stack>

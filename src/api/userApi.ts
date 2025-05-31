@@ -5,28 +5,36 @@ const API = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
+// User Schema
 export const userSchema = z.object({
   id: z.number().optional(),
-  epf: z.string(),
-  employeeName: z.string(),
-  username: z.string(),
-  department: z.string(),
+  epf: z.string().min(1, "EPF is required"),
+  employeeName: z.string().min(1, "Name is required"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  department: z.string().min(1, "Department is required"),
   contact: z.string().optional(),
-  email: z.string().email(),
-  userType: z.string(),
+  email: z.string().email("Invalid email address"),
+  userType: z.string().min(1, "User type is required"),
   availability: z.boolean().optional(),
   status: z.string().optional(),
 });
 
 export type User = z.infer<typeof userSchema>;
 
-
-export async function registerUser(userData: Partial<User>) {
-  const res = await API.post("/register", userData);  
-  return res.data;
+// Register User
+export async function registerUser(userData: User) {
+  const response = await API.post("/api/user-register", userData);
+  return response.data;
 }
 
+// Validate User
 export async function validateUser() {
-  const res = await API.get("/user");  
-  return res.data;
+  const response = await API.get("/user");
+  return response.data;
 }
+
+export const authService = {
+  register: registerUser,
+  validate: validateUser,
+};

@@ -79,9 +79,11 @@ const DayPlanUpload: React.FC = () => {
     { field: "per_hour_pcs", headerName: "Per Hour Pcs", width: 100 },
     { field: "available_cader", headerName: "Available Cader", width: 120 },
     { field: "present_linkers", headerName: "Present Linkers", width: 100 },
+    { field: "check_point", headerName: "Check Point", width: 90 },
     { field: "status", headerName: "Status", width: 90 },
     { field: "created_at", headerName: "Created At", width: 90 },
     { field: "updated_at", headerName: "Updated At", width: 90 },
+    
   ];
 
   // Toggle fullscreen mode
