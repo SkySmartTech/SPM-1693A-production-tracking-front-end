@@ -8,8 +8,6 @@ import {
   IconButton,
   Stack,
   Grid,
-  Card,
-  CardContent,
   Divider,
   Snackbar,
   Alert,
@@ -31,7 +29,6 @@ import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import Footer from "../../../components/Footer";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -62,14 +59,14 @@ interface PerformanceMetrics {
 const columns: GridColDef[] = [
   { field: "id", headerName: "ID", width: 80 },
   { field: "serverDateTime", headerName: "Server Date Time", width: 180 },
-  { field: "lineNo", headerName: "Line No", width: 100 },
+  { field: "lineNo", headerName: "Line No", width: 120 },
   { field: "buyer", headerName: "Buyer", width: 120 },
   { field: "style", headerName: "Style", width: 120 },
-  { field: "color", headerName: "Color", width: 100 },
-  { field: "size", headerName: "Size", width: 80 },
-  { field: "success", headerName: "Success", width: 100, type: 'number' },
-  { field: "rework", headerName: "Rework", width: 100, type: 'number' },
-  { field: "defect", headerName: "Defect", width: 100, type: 'number' },
+  { field: "color", headerName: "Color", width: 120 },
+  { field: "size", headerName: "Size", width: 120 },
+  { field: "success", headerName: "Success", width: 120, type: 'number' },
+  { field: "rework", headerName: "Rework", width: 120, type: 'number' },
+  { field: "defect", headerName: "Defect", width: 150, type: 'number' },
 ];
 
 const fetchReports = async (startDate?: Dayjs | null, endDate?: Dayjs | null): Promise<ReportData[]> => {
@@ -123,7 +120,6 @@ const DayPlanReport = () => {
 
   // Fetch performance metrics
   const {
-    data: metricsData,
     isLoading: isMetricsLoading,
     isError: isMetricsError,
     refetch: refetchMetrics
@@ -283,122 +279,6 @@ const DayPlanReport = () => {
             Details
           </Typography>
 
-          {/* Performance Metrics Boxes */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    Performance EFI
-                  </Typography>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="h5" component="div">
-                      {metricsData?.performanceEfi?.toFixed(2) ?? 0}%
-                    </Typography>
-                    <TrendingUpIcon color={(metricsData?.performanceEfi ?? 0) > 0 ? "success" : "error"} sx={{ ml: 1 }} />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {(metricsData?.performanceEfi ?? 0) > 0 ? "More than yesterday" : "Less than yesterday"}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4} lg={2}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    LINE EFI
-                  </Typography>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="h5" component="div">
-                      {metricsData?.lineEfi?.toFixed(2) ?? 0}%
-                    </Typography>
-                    <TrendingUpIcon color={(metricsData?.lineEfi ?? 0) > 0 ? "success" : "error"} sx={{ ml: 1 }} />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {(metricsData?.lineEfi ?? 0) > 0 ? "More than yesterday" : "Less than yesterday"}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4} lg={2}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Success
-                  </Typography>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="h5" component="div">
-                      {metricsData?.totalSuccess ?? 0}
-                    </Typography>
-                    <TrendingUpIcon color="success" sx={{ ml: 1 }} />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    More than yesterday
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4} lg={2}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Rework
-                  </Typography>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="h5" component="div">
-                      {metricsData?.totalRework ?? 0}
-                    </Typography>
-                    <TrendingUpIcon color="error" sx={{ ml: 1 }} />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    More than yesterday
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4} lg={2}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Defect
-                  </Typography>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="h5" component="div">
-                      {metricsData?.totalDefect ?? 0}
-                    </Typography>
-                    <TrendingUpIcon color="error" sx={{ ml: 1 }} />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    More than yesterday
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4} lg={2}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    TOP 3 DEFECTS
-                  </Typography>
-                  <Typography variant="h5" component="div">
-                    {metricsData?.topDefects?.length ?? 0}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {metricsData?.topDefects?.map((defect, index) => (
-                      <div key={index}>{index + 1}. {defect}</div>
-                    )) ?? "No data available"}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-
           {/* Date Pickers & View Reports */}
           <Box
             sx={{
@@ -410,7 +290,8 @@ const DayPlanReport = () => {
             }}
           >
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={4}>
+              {/* Date pickers on the left */}
+              <Grid item xs={6} sm={2}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     label="Start Date"
@@ -426,7 +307,7 @@ const DayPlanReport = () => {
                   />
                 </LocalizationProvider>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={6} sm={2}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     label="End Date"
@@ -442,12 +323,17 @@ const DayPlanReport = () => {
                   />
                 </LocalizationProvider>
               </Grid>
-              <Grid item xs={12} sm={4} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+
+              {/* Spacer to push button to the right */}
+              <Grid item xs={12} sm={8} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={handleFetchReports}
-                  sx={{ height: '40px' }}
+                  sx={{
+                    height: '40px',
+                    minWidth: '150px'
+                  }}
                   disabled={isLoading}
                   startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
                 >
@@ -456,7 +342,6 @@ const DayPlanReport = () => {
               </Grid>
             </Grid>
           </Box>
-
           {/* Export Buttons */}
           <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mb: 1 }}>
             <Button startIcon={<FileCopyIcon />} size="small">

@@ -39,15 +39,15 @@ import axios from "axios";
 
 interface ReportData {
   id: number;
-  serverDateTime: string;
+  serverDate: string;
+  serverTime: string;
   lineNo: string;
   buyer: string;
-  style: string;
-  color: string;
-  size: string;
-  success: number;
-  rework: number;
-  defect: number;
+  todayTarget: number;
+  uptoNow: number;
+  uptoTarget: number;
+  hourlyBalance: number;
+  todayBalance: number;
 }
 
 interface PerformanceMetrics {
@@ -61,15 +61,15 @@ interface PerformanceMetrics {
 
 const columns: GridColDef[] = [
   { field: "id", headerName: "ID", width: 80 },
-  { field: "serverDateTime", headerName: "Server Date Time", width: 180 },
+  { field: "serverDate", headerName: "Server Date", width: 120 },
+  { field: "serverTime", headerName: "Server Time", width: 120 },
   { field: "lineNo", headerName: "Line No", width: 100 },
   { field: "buyer", headerName: "Buyer", width: 120 },
-  { field: "style", headerName: "Style", width: 120 },
-  { field: "color", headerName: "Color", width: 100 },
-  { field: "size", headerName: "Size", width: 80 },
-  { field: "success", headerName: "Success", width: 100, type: 'number' },
-  { field: "rework", headerName: "Rework", width: 100, type: 'number' },
-  { field: "defect", headerName: "Defect", width: 100, type: 'number' },
+  { field: "todayTarget", headerName: "Today Target", width: 120, type: 'number' },
+  { field: "uptoNow", headerName: "Upto Now", width: 120, type: 'number' },
+  { field: "uptoTarget", headerName: "Upto Target", width: 120, type: 'number' },
+  { field: "hourlyBalance", headerName: "Hourly Balance", width: 140, type: 'number' },
+  { field: "todayBalance", headerName: "Today Balance", width: 140, type: 'number' },
 ];
 
 const fetchReports = async (startDate?: Dayjs | null, endDate?: Dayjs | null): Promise<ReportData[]> => {
