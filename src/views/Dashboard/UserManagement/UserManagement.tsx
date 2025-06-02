@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -26,38 +26,26 @@ import UserManagementTable from "./UserManagementTable";
 import Sidebar from "../../../components/Sidebar";
 import { Menu, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-
-interface User {
-  id: number;
-  epf: string;
-  employeeName: string;
-  username: string;
-  password: string;
-  department: string;
-  contact: string;
-  email: string;
-  userType: string;
-  availability: string;
-}
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchUsers, createUser, updateUser, deleteUser } from "../../../api/userManagement";
+import { User } from "../../../api/userApi";
 
 const departments = ["IT", "HR", "Finance", "Marketing", "Operations"];
 const userTypes = ["Admin", "User", "Manager"];
 const availabilityStatus = ["Active", "Inactive"];
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [form, setForm] = useState<User>({
-    id: 0,
+  const [form, setForm] = useState<Omit<User, 'id'> & { id?: number }>({
     epf: "",
     employeeName: "",
     username: "",
-    password: "",
     department: "",
     contact: "",
     email: "",
     userType: "",
-    availability: "",
+    availability: false,
+    password: "",
+    status: ""
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -65,82 +53,98 @@ const UserManagement: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
-  const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success" as "success" | "error"
   });
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  // Fetch users from backend
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("/api/users");
-        setUsers(response.data.data);
-      } catch (error) {
-        showSnackbar("Failed to fetch users", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUsers();
-  }, []);
+  // Fetch users using React Query
+  const { data: users = [], isLoading } = useQuery<User[]>({
+    queryKey: ["users"],
+    queryFn: fetchUsers,
+  });
+
+  // Mutations
+  const createUserMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      showSnackbar("User created successfully!", "success");
+      handleClear();
+    },
+    onError: () => {
+      showSnackbar("Failed to create user", "error");
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: (userData: User) => updateUser(userData.id as number, userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      showSnackbar("User updated successfully!", "success");
+      handleClear();
+    },
+    onError: () => {
+      showSnackbar("Failed to update user", "error");
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      showSnackbar("User deleted successfully!", "success");
+    },
+    onError: () => {
+      showSnackbar("Failed to delete user", "error");
+    }
+  });
 
   const showSnackbar = (message: string, severity: "success" | "error") => {
     setSnackbar({ open: true, message, severity });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (e: React.ChangeEvent<{ value: unknown }>, field: keyof User) => {
-    setForm({ ...form, [field]: e.target.value as string });
+    const value = e.target.value;
+    setForm(prev => ({ 
+      ...prev, 
+      [field]: field === 'availability' ? value === 'Active' : value 
+    }));
   };
 
   const handleSave = async () => {
-    if (!form.epf || !form.employeeName || !form.username || !form.password) {
+    if (!form.epf || !form.employeeName || !form.username) {
       showSnackbar("Please fill all required fields!", "error");
       return;
     }
 
-    try {
-      setLoading(true);
-      if (editId !== null) {
-        // Update existing user
-        await axios.put(`/api/users/${editId}`, form);
-        showSnackbar("User updated successfully!", "success");
-      } else {
-        // Create new user
-        await axios.post("/api/users", form);
-        showSnackbar("User created successfully!", "success");
-      }
-      // Refresh user list
-      const response = await axios.get("/api/users");
-      setUsers(response.data.data);
-      handleClear();
-    } catch (error) {
-      showSnackbar("Failed to save user", "error");
-    } finally {
-      setLoading(false);
+    if (editId !== null) {
+      updateUserMutation.mutate({ ...form, id: editId });
+    } else {
+      createUserMutation.mutate(form as User);
     }
   };
 
   const handleClear = () => {
     setForm({
-      id: 0,
       epf: "",
       employeeName: "",
       username: "",
-      password: "",
       department: "",
       contact: "",
       email: "",
       userType: "",
-      availability: "",
+      availability: false,
+      password: "",
+      status: ""
     });
     setEditId(null);
   };
@@ -153,19 +157,9 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    try {
-      setLoading(true);
-      await axios.delete(`/api/users/${id}`);
-      setUsers(users.filter(user => user.id !== id));
-      showSnackbar("User deleted successfully!", "success");
-    } catch (error) {
-      showSnackbar("Failed to delete user", "error");
-    } finally {
-      setLoading(false);
-    }
+  const handleDelete = (id: number) => {
+    deleteUserMutation.mutate(id);
   };
-
 
   // Account menu handlers
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -199,6 +193,8 @@ const UserManagement: React.FC = () => {
     navigate("/notifications");
     handleNotificationMenuClose();
   };
+
+  const loading = isLoading || createUserMutation.isPending || updateUserMutation.isPending || deleteUserMutation.isPending;
 
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
@@ -289,7 +285,7 @@ const UserManagement: React.FC = () => {
           </Toolbar>
         </AppBar>
 
-        {loading ? (
+        {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
             <CircularProgress size={60} />
           </Box>
@@ -300,11 +296,10 @@ const UserManagement: React.FC = () => {
                 User Details
               </Typography>
               <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                <TextField fullWidth label="ID" name="id" value={form.id} disabled />
+                <TextField fullWidth label="ID" name="id" value={form.id || ''} disabled />
                 <TextField fullWidth label="EPF*" name="epf" value={form.epf} onChange={handleChange} />
                 <TextField fullWidth label="Employee Name*" name="employeeName" value={form.employeeName} onChange={handleChange} />
                 <TextField fullWidth label="Username*" name="username" value={form.username} onChange={handleChange} />
-                <TextField fullWidth label="Password*" name="password" type="password" value={form.password} onChange={handleChange} />
                 <TextField
                   select
                   fullWidth
@@ -337,7 +332,7 @@ const UserManagement: React.FC = () => {
                   select
                   fullWidth
                   label="Availability"
-                  value={form.availability}
+                  value={form.availability ? "Active" : "Inactive"}
                   onChange={(e) => handleSelectChange(e, "availability")}
                 >
                   {availabilityStatus.map((status) => (
@@ -358,7 +353,12 @@ const UserManagement: React.FC = () => {
               </Stack>
             </Paper>
 
-            <UserManagementTable users={users} handleEdit={handleEdit} handleDelete={handleDelete} />
+            <UserManagementTable 
+              users={users} 
+              handleEdit={handleEdit} 
+              handleDelete={handleDelete} 
+              loading={loading}
+            />
           </Stack>
         )}
 
