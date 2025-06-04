@@ -15,7 +15,8 @@ import {
   Menu,
   MenuItem,
   Badge,
-  CssBaseline
+  CssBaseline,
+  useTheme
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -29,10 +30,10 @@ import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import Footer from "../../../components/Footer";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { useCustomTheme } from "../../../context/ThemeContext";
 
 interface ReportData {
   id: number;
@@ -105,6 +106,8 @@ const DayPlanReport = () => {
     pageSize: 10,
     page: 0,
   });
+    const theme = useTheme();
+    useCustomTheme();
 
   // Fetch reports data
   const {
@@ -186,7 +189,7 @@ const DayPlanReport = () => {
   const isError = isReportsError || isMetricsError;
 
   return (
-    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -195,12 +198,12 @@ const DayPlanReport = () => {
         onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
+        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
           <Toolbar>
             <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
+            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary}}>
               Day Plan Report
             </Typography>
 
@@ -282,7 +285,7 @@ const DayPlanReport = () => {
           {/* Date Pickers & View Reports */}
           <Box
             sx={{
-              backgroundColor: "#ffffff",
+              
               padding: 2,
               borderRadius: 1,
               mb: 3,
@@ -362,7 +365,7 @@ const DayPlanReport = () => {
           </Stack>
 
           {/* DataGrid Table */}
-          <Box sx={{ height: 500, backgroundColor: "#fff", p: 2, borderRadius: 1, boxShadow: 1 }}>
+          <Box sx={{ height: 500, p: 2, borderRadius: 1, boxShadow: 1 }}>
             {isError ? (
               <Box display="flex" justifyContent="center" alignItems="center" height="100%">
                 <Typography color="error">Error loading data</Typography>
@@ -380,7 +383,6 @@ const DayPlanReport = () => {
             )}
           </Box>
         </Box>
-        <Footer />
       </Box>
 
       <Snackbar

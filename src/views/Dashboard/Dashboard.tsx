@@ -12,6 +12,7 @@ import {
   Divider,
   CssBaseline,
   Button,
+  useTheme,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -25,6 +26,7 @@ import { dashboardInfo } from "../../data/dashboardInfo";
 import { DashboardData, dashboardData as mockData } from "../../data/dashboardData";
 import { Menu, MenuItem, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useCustomTheme } from "../../context/ThemeContext";
 
 const Dashboard = () => {
   const [, setIsFullscreen] = useState(false);
@@ -37,6 +39,8 @@ const Dashboard = () => {
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
   const navigate = useNavigate();
+    const theme = useTheme();
+    useCustomTheme();
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -111,20 +115,22 @@ const Dashboard = () => {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       />
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: "#f5f5f5" }}>
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
+      <Box component="main" sx={{ flexGrow: 1 }}>
+        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper
+
+, boxShadow: 2 }}>
           <Toolbar>
             <IconButton
               edge="start"
               color="inherit"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              sx={{ color: "black" }}
+              sx={{ color: theme.palette.text.primary }}
             >
               <MenuIcon />
             </IconButton>
 
-            <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
-              Day Plan Report
+            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
+              Dashboard
             </Typography>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
@@ -296,8 +302,8 @@ const Dashboard = () => {
 
                       <Box
                         sx={{
-                          bgcolor: "white",
-                          color: "black",
+                          bgcolor: theme.palette.background.paper,
+                          color: theme.palette.text.primary,
                           p: 1,
                           textAlign: "center",
                           flex: isLargeBox ? 0.8 : 0.5,

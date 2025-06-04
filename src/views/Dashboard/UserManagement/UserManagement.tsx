@@ -14,7 +14,9 @@ import {
   Divider,
   Snackbar,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Badge,
+  useTheme
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -24,15 +26,64 @@ import {
 } from "@mui/icons-material";
 import UserManagementTable from "./UserManagementTable";
 import Sidebar from "../../../components/Sidebar";
-import { Menu, Badge } from "@mui/material";
+import { Menu } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchUsers, createUser, updateUser, deleteUser } from "../../../api/userManagement";
-import { User } from "../../../api/userApi";
+import axios from "axios";
+import { useCustomTheme } from "../../../context/ThemeContext";
+
+interface User {
+  id?: number;
+  epf: string;
+  employeeName: string;
+  username: string;
+  department: string;
+  contact: string;
+  email: string;
+  userType: string;
+  availability: boolean;
+  password: string;
+  status: string;
+}
 
 const departments = ["IT", "HR", "Finance", "Marketing", "Operations"];
 const userTypes = ["Admin", "User", "Manager"];
 const availabilityStatus = ["Active", "Inactive"];
+
+const fetchUsers = async (): Promise<User[]> => {
+  const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/all-users`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
+  return response.data.data || response.data;
+};
+
+const createUser = async (userData: User): Promise<User> => {
+  const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/all-users`, userData, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
+  return response.data;
+};
+
+const updateUser = async (id: number, userData: User): Promise<User> => {
+  const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/all-users/${id}`, userData, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
+  return response.data;
+};
+
+const deleteUser = async (id: number): Promise<void> => {
+  await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/all-users/${id}`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
+};
 
 const UserManagement: React.FC = () => {
   const [form, setForm] = useState<Omit<User, 'id'> & { id?: number }>({
@@ -58,11 +109,14 @@ const UserManagement: React.FC = () => {
     message: "",
     severity: "success" as "success" | "error"
   });
+    const theme = useTheme();
+    useCustomTheme();
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // Fetch users using React Query
-  const { data: users = [], isLoading } = useQuery<User[]>({
+  const { data: users = [], isLoading: isDataLoading } = useQuery<User[]>({
     queryKey: ["users"],
     queryFn: fetchUsers,
   });
@@ -75,8 +129,8 @@ const UserManagement: React.FC = () => {
       showSnackbar("User created successfully!", "success");
       handleClear();
     },
-    onError: () => {
-      showSnackbar("Failed to create user", "error");
+    onError: (error: any) => {
+      showSnackbar(error.response?.data?.message || "Failed to create user", "error");
     }
   });
 
@@ -87,8 +141,8 @@ const UserManagement: React.FC = () => {
       showSnackbar("User updated successfully!", "success");
       handleClear();
     },
-    onError: () => {
-      showSnackbar("Failed to update user", "error");
+    onError: (error: any) => {
+      showSnackbar(error.response?.data?.message || "Failed to update user", "error");
     }
   });
 
@@ -98,8 +152,8 @@ const UserManagement: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       showSnackbar("User deleted successfully!", "success");
     },
-    onError: () => {
-      showSnackbar("Failed to delete user", "error");
+    onError: (error: any) => {
+      showSnackbar(error.response?.data?.message || "Failed to delete user", "error");
     }
   });
 
@@ -107,21 +161,21 @@ const UserManagement: React.FC = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (e: React.ChangeEvent<{ value: unknown }>, field: keyof User) => {
     const value = e.target.value;
-    setForm(prev => ({ 
-      ...prev, 
-      [field]: field === 'availability' ? value === 'Active' : value 
+    setForm(prev => ({
+      ...prev,
+      [field]: field === 'availability' ? value === 'Active' : value
     }));
   };
 
-  const handleSave = async () => {
-    if (!form.epf || !form.employeeName || !form.username) {
+  const handleSave = () => {
+    if (!form.epf || !form.employeeName || !form.username || !form.password) {
       showSnackbar("Please fill all required fields!", "error");
       return;
     }
@@ -152,13 +206,18 @@ const UserManagement: React.FC = () => {
   const handleEdit = (id: number) => {
     const userToEdit = users.find(user => user.id === id);
     if (userToEdit) {
-      setForm(userToEdit);
+      setForm({
+        ...userToEdit,
+        availability: userToEdit.availability || false
+      });
       setEditId(id);
     }
   };
 
   const handleDelete = (id: number) => {
-    deleteUserMutation.mutate(id);
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      deleteUserMutation.mutate(id);
+    }
   };
 
   // Account menu handlers
@@ -176,6 +235,7 @@ const UserManagement: React.FC = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("authToken");
     navigate("/login");
     handleAccountMenuClose();
   };
@@ -194,7 +254,7 @@ const UserManagement: React.FC = () => {
     handleNotificationMenuClose();
   };
 
-  const loading = isLoading || createUserMutation.isPending || updateUserMutation.isPending || deleteUserMutation.isPending;
+  const isMutating = createUserMutation.isPending || updateUserMutation.isPending || deleteUserMutation.isPending;
 
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
@@ -206,12 +266,12 @@ const UserManagement: React.FC = () => {
         onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
+        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
           <Toolbar>
             <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
+            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
               User Management
             </Typography>
 
@@ -285,87 +345,137 @@ const UserManagement: React.FC = () => {
           </Toolbar>
         </AppBar>
 
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
-            <CircularProgress size={60} />
-          </Box>
-        ) : (
-          <Stack spacing={3} sx={{ mt: 3 }}>
-            <Paper sx={{ p: 1.4 }}>
-              <Typography variant="h6" sx={{ mb: 0 }}>
-                User Details
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                <TextField fullWidth label="ID" name="id" value={form.id || ''} disabled />
-                <TextField fullWidth label="EPF*" name="epf" value={form.epf} onChange={handleChange} />
-                <TextField fullWidth label="Employee Name*" name="employeeName" value={form.employeeName} onChange={handleChange} />
-                <TextField fullWidth label="Username*" name="username" value={form.username} onChange={handleChange} />
-                <TextField
-                  select
-                  fullWidth
-                  label="Department"
-                  value={form.department}
-                  onChange={(e) => handleSelectChange(e, "department")}
-                >
-                  {departments.map((dept) => (
-                    <MenuItem key={dept} value={dept}>
-                      {dept}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField fullWidth label="Contact" name="contact" value={form.contact} onChange={handleChange} />
-                <TextField fullWidth label="Email" name="email" value={form.email} onChange={handleChange} />
-                <TextField
-                  select
-                  fullWidth
-                  label="User Type"
-                  value={form.userType}
-                  onChange={(e) => handleSelectChange(e, "userType")}
-                >
-                  {userTypes.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  select
-                  fullWidth
-                  label="Availability"
-                  value={form.availability ? "Active" : "Inactive"}
-                  onChange={(e) => handleSelectChange(e, "availability")}
-                >
-                  {availabilityStatus.map((status) => (
-                    <MenuItem key={status} value={status}>
-                      {status}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Stack>
+        <Stack spacing={3} sx={{ p: 3 }}>
+          <Paper sx={{ p:2 }}>
+            <Typography variant="h6" sx={{ mb: 3 }}>
+              User Details
+            </Typography>
 
-              <Stack direction="row" spacing={2} sx={{ mt: 2, justifyContent: "flex-end", p: 2 }}>
-                <Button variant="contained" color="primary" onClick={handleSave} disabled={loading}>
-                  {editId !== null ? "Update" : "Save"}
-                </Button>
-                <Button variant="outlined" onClick={handleClear} disabled={loading}>
-                  Clear
-                </Button>
-              </Stack>
-            </Paper>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ mb: 2, overflowX: 'auto' }}
+              flexWrap="nowrap"
+            >
+              <TextField
+                label="EPF*"
+                name="epf"
+                value={form.epf}
+                onChange={handleChange}
+                sx={{ width: 130 }}
+              />
+              <TextField
+                label="Employee Name*"
+                name="employeeName"
+                value={form.employeeName}
+                onChange={handleChange}
+                sx={{ width: 150 }}
+              />
+              <TextField
+                label="Username*"
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                sx={{ width: 150 }}
+              />
+              <TextField
+                label="Password*"
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={handleChange}
+                sx={{ width: 150 }}
+              />
+              <TextField
+                select
+                label="Department"
+                name="department"
+                value={form.department}
+                onChange={(e) => handleSelectChange(e, "department")}
+                sx={{ width: 150 }}
+              >
+                {departments.map((dept) => (
+                  <MenuItem key={dept} value={dept}>
+                    {dept}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Contact"
+                name="contact"
+                value={form.contact}
+                onChange={handleChange}
+                sx={{ width: 150 }}
+              />
+              <TextField
+                label="Email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                sx={{ width: 150 }}
+              />
+              <TextField
+                select
+                label="User Type"
+                name="userType"
+                value={form.userType}
+                onChange={(e) => handleSelectChange(e, "userType")}
+                sx={{ width: 150 }}
+              >
+                {userTypes.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Status"
+                name="availability"
+                value={form.availability ? "Active" : "Inactive"}
+                onChange={(e) => handleSelectChange(e, "availability")}
+                sx={{ width: 150 }}
+              >
+                {availabilityStatus.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
 
-            <UserManagementTable 
-              users={users} 
-              handleEdit={handleEdit} 
-              handleDelete={handleDelete} 
-              loading={loading}
-            />
-          </Stack>
-        )}
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                disabled={isMutating}
+                startIcon={isMutating ? <CircularProgress size={20} /> : null}
+              >
+                {editId !== null ? "Update User" : "Create User"}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handleClear}
+                disabled={isMutating}
+              >
+                Clear
+              </Button>
+            </Stack>
+          </Paper>
 
+          <UserManagementTable
+            users={users}
+            handleEdit={handleEdit}
+            handleDelete={handleDelete}
+            loading={isDataLoading || isMutating}
+          />
+        </Stack>
+        
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         >
           <Alert
             onClose={() => setSnackbar({ ...snackbar, open: false })}

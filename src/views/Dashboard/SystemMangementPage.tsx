@@ -25,7 +25,8 @@ import {
   Snackbar,
   Alert,
   Tabs,
-  Tab
+  Tab,
+  useTheme
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -40,6 +41,7 @@ import Sidebar from "../../components/Sidebar";
 import { Menu, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
+import { useCustomTheme } from '../../context/ThemeContext';
 
 // Define interfaces for each table type
 interface Color {
@@ -101,6 +103,8 @@ const SystemManagement = () => {
     form: false,
     delete: false
   });
+    const theme = useTheme();
+    useCustomTheme();
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -717,12 +721,12 @@ const SystemManagement = () => {
         onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
+        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
           <Toolbar>
             <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
+            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
               System Management
             </Typography>
 
