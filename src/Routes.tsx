@@ -3,6 +3,9 @@ import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import MainLayout from "./components/Layout/MainLayout";
 import PageLoader from "./components/PageLoader";
 import { useCurrentUser } from "./hooks/useCurrentUser";
+import UserRoleManagement from "./views/Dashboard/UserRoleManagement/UserRoleManagement";
+import UserAccessManagement from "./views/Dashboard/UserAccessManagement/UserAccessManagement";
+
 
 // Public pages
 const LoginPage = React.lazy(() => import("./views/LoginPage/Login"));
@@ -21,8 +24,6 @@ const DayPlanSummary = React.lazy(() => import("./views/Dashboard/DayPlanSummary
 
 // Administration pages
 const UserManagement = React.lazy(() => import("./views/Dashboard/UserManagement/UserManagement"));
-const UserAccessManagement = React.lazy(() => import("./views/Dashboard/UserAccessManagement/UserAccessManagement"));
-const UserAccessManagementSystem = React.lazy(() => import("./views/Dashboard/UserAccessManagementSystem/UserAccessManagementSystem"));
 
 function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useCurrentUser();
@@ -77,8 +78,8 @@ function AppRoutes() {
         <Route path="/dayReport" element={<DayPlanReport />} />
         <Route path="/daySummary" element={<DayPlanSummary />} />
         <Route path="/userManagement" element={<UserManagement />} />
-        <Route path="/userAccessManagement" element={<UserAccessManagement />} />
-        <Route path="/userAccessManagementSystem" element={<UserAccessManagementSystem />} />
+        <Route path="/userRoleManagement" element={<UserRoleManagement />} />
+        <Route path="/userAccessManagement" element={<UserAccessManagement/>} />
 
       </Route>
 

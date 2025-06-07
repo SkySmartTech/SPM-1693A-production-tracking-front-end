@@ -94,8 +94,8 @@ const Sidebar = ({ open, setOpen, onMouseEnter, onMouseLeave }: SidebarProps) =>
       children: [
         { title: "User Account", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userProfile" },
         { title: "User Management", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userManagement" },
+        { title: "User Role Management", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userRoleManagement" },
         { title: "User Access Management", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userAccessManagement" },
-        { title: "User Access Management System", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userAccessManagementSystem" },
       ],
     },
     {

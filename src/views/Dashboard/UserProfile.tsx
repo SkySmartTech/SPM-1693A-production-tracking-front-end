@@ -18,7 +18,8 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  Badge
+  Badge,
+  useTheme
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -33,6 +34,7 @@ import { Menu } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { useCustomTheme } from "../../context/ThemeContext";
 
 // Department options
 const departments = ["IT", "HR", "Finance", "Marketing", "Operations"];
@@ -110,6 +112,8 @@ const UserProfile: React.FC = () => {
     message: "",
     severity: "success" as "success" | "error",
   });
+  const theme = useTheme();
+  useCustomTheme();
 
   const queryClient = useQueryClient();
 
@@ -240,17 +244,29 @@ const UserProfile: React.FC = () => {
         onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
+        <AppBar
+          position="static"
+          sx={{
+            bgcolor: theme.palette.background.paper,
+            boxShadow: 'none',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            color: theme.palette.text.primary
+          }}
+        >
           <Toolbar>
-            <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <IconButton
+              edge="start"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              color="inherit"
+            >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
               User Profile
             </Typography>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen}>
+              <IconButton onClick={handleNotificationMenuOpen} color="inherit">
                 <Badge badgeContent={notificationCount} color="error">
                   <NotificationsIcon />
                 </Badge>
@@ -292,11 +308,14 @@ const UserProfile: React.FC = () => {
                 </MenuItem>
               </Menu>
 
-              <IconButton onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}>
+              <IconButton
+                onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
+                color="inherit"
+              >
                 <FullscreenIcon />
               </IconButton>
 
-              <IconButton onClick={handleAccountMenuOpen}>
+              <IconButton onClick={handleAccountMenuOpen} color="inherit">
                 <AccountCircleIcon />
               </IconButton>
               <Menu
@@ -322,7 +341,7 @@ const UserProfile: React.FC = () => {
         {/* Profile Card - Always visible */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
           <Box sx={{
-            bgcolor: "white",
+            bgcolor: theme.palette.background.paper,
             p: 4,
             borderRadius: 3,
             boxShadow: 3,

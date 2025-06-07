@@ -27,6 +27,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       secondary: {
         main: mode === 'light' ? '#dc004e' : '#f48fb1',
       },
+      background: {
+        default: mode === 'light' ? '#f5f5f5' : '#121212',
+        paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+      },
+    },
+    components: {
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            transition: 'background-color 0.3s ease',
+          },
+        },
+      },
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            transition: 'background-color 0.3s ease',
+          },
+        },
+      },
     },
   }), [mode]);
 

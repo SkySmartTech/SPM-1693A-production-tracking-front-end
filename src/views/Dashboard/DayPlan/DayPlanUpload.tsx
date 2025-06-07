@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import {
   Box, Typography, Button, AppBar, Toolbar, IconButton,
   CssBaseline, Menu, MenuItem,
-  Divider
+  Divider,
+  useTheme
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import axios from "axios";
@@ -15,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import Badge from '@mui/material/Badge';
 import { fetchDayPlans } from "../../../api/dayPlansApi";
 import { useQuery } from "@tanstack/react-query";
+import { useCustomTheme } from "../../../context/ThemeContext";
 
 const DayPlanUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -30,6 +32,8 @@ const DayPlanUpload: React.FC = () => {
     queryKey: ["day-plans"],
     queryFn: fetchDayPlans,
   });
+    const theme = useTheme();
+    useCustomTheme();
 
   // Handle file selection
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,6 +68,48 @@ const DayPlanUpload: React.FC = () => {
     }
   };
 
+  // Handle sample file download
+  const handleDownloadSample = () => {
+    // Create a sample Excel file structure
+    const sampleData = [
+      {
+        line_no: "1",
+        resp_employee: "EMP001",
+        buyer: "Buyer1",
+        style: "Style1",
+        gg: "GG1",
+        smv: "2.5",
+        display_wh: "8",
+        actual_wh: "8",
+        plan_tgt_pcs: "1000",
+        per_hour_pcs: "125",
+        available_cader: "50",
+        present_linkers: "45",
+        check_point: "Check1",
+        status: "Active"
+      }
+    ];
+
+    // Convert to CSV format (Excel can open CSV files)
+    const headers = Object.keys(sampleData[0]);
+    const csvRows = sampleData.map(row => 
+      headers.map(fieldName => 
+        JSON.stringify(row[fieldName as keyof typeof row])
+      ).join(',')
+    );
+    const csvContent = [headers.join(','), ...csvRows].join('\r\n');
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'day_plan_sample.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Define DataGrid columns
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", width: 60 },
@@ -83,10 +129,7 @@ const DayPlanUpload: React.FC = () => {
     { field: "status", headerName: "Status", width: 90 },
     { field: "created_at", headerName: "Created At", width: 90 },
     { field: "updated_at", headerName: "Updated At", width: 90 },
-    
   ];
-
-  // Toggle fullscreen mode
 
   // Account menu handlers
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -131,12 +174,12 @@ const DayPlanUpload: React.FC = () => {
         onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
+        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
           <Toolbar>
             <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
+            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
               Day Plan Upload
             </Typography>
 
@@ -210,7 +253,7 @@ const DayPlanUpload: React.FC = () => {
           </Toolbar>
         </AppBar>
         {/* Content */}
-        <Box sx={{ padding: 5, backgroundColor: "#f9f9f9", borderRadius: "8px", marginBottom: 5 }}>
+        <Box sx={{ padding: 5, borderRadius: "8px", marginBottom: 5 }}>
           <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 5 }}>
             Day Plan Upload
           </Typography>
@@ -218,7 +261,7 @@ const DayPlanUpload: React.FC = () => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, marginBottom: 5 }}>
             <input
               type="file"
-              accept=".xlsx"
+              accept=".xlsx,.xls,.csv"
               onChange={handleFileChange}
               style={{ display: "none" }}
               id="file-input"
@@ -230,14 +273,22 @@ const DayPlanUpload: React.FC = () => {
             </label>
             <Typography>{file ? file.name : "No file chosen"}</Typography>
 
-            {/* Spacer to push Upload button to the right */}
+            {/* Spacer to push buttons to the right */}
             <Box sx={{ flexGrow: 1 }} />
+
+            <Button 
+              variant="outlined" 
+              onClick={handleDownloadSample}
+              sx={{ marginRight: 2 }}
+            >
+              Download Sample
+            </Button>
 
             <Button variant="contained" color="primary" onClick={handleUpload}>
               Upload
             </Button>
           </Box>
-          <Box sx={{ height: 400, width: "100%", backgroundColor: "white", borderRadius: "8px", overflowX: "auto" }}>
+          <Box sx={{ height: 400, width: "100%",  borderRadius: "8px", overflowX: "auto" }}>
             {isLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <Typography>Loading data...</Typography>
@@ -256,7 +307,6 @@ const DayPlanUpload: React.FC = () => {
           </Box>
         </Box>
       </Box>
-
     </Box>
   );
 };

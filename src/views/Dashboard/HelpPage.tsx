@@ -16,6 +16,7 @@ import {
   Paper,
   CssBaseline,
   Divider,
+  useTheme,
 } from "@mui/material";
 import {
   Search,
@@ -30,9 +31,10 @@ import {
   Fullscreen as FullscreenIcon,
   AccountCircle as AccountCircleIcon
 } from "@mui/icons-material";
-import Sidebar from "../../components/Sidebar"; // Ensure Sidebar component exists
+import Sidebar from "../../components/Sidebar";
 import { Menu, MenuItem, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useCustomTheme } from "../../context/ThemeContext";
 
 const HelpPage = () => {
   const navigate = useNavigate();
@@ -42,7 +44,8 @@ const HelpPage = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
-
+  const theme = useTheme();
+  useCustomTheme();
 
   // Account menu handlers
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -77,7 +80,6 @@ const HelpPage = () => {
     handleNotificationMenuClose();
   };
 
-
   // Help topics with navigation routes
   const helpTopics = [
     { icon: <RocketLaunch />, text: "Getting Started", route: "/getting-started" },
@@ -93,7 +95,7 @@ const HelpPage = () => {
   const filteredItems = searchTerm ? allItems.filter(item => item.toLowerCase().includes(searchTerm.toLowerCase())) : [];
 
   return (
-    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh", bgcolor: theme.palette.background.default }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -102,17 +104,29 @@ const HelpPage = () => {
         onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
+        <AppBar 
+          position="static" 
+          sx={{ 
+            bgcolor: theme.palette.background.paper,
+            boxShadow: 'none',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            color: theme.palette.text.primary
+          }}
+        >
           <Toolbar>
-            <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <IconButton 
+              edge="start" 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              color="inherit"
+            >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
               Help
             </Typography>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen}>
+              <IconButton onClick={handleNotificationMenuOpen} color="inherit">
                 <Badge badgeContent={notificationCount} color="error">
                   <NotificationsIcon />
                 </Badge>
@@ -154,11 +168,14 @@ const HelpPage = () => {
                 </MenuItem>
               </Menu>
 
-              <IconButton onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}>
+              <IconButton 
+                onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
+                color="inherit"
+              >
                 <FullscreenIcon />
               </IconButton>
 
-              <IconButton onClick={handleAccountMenuOpen}>
+              <IconButton onClick={handleAccountMenuOpen} color="inherit">
                 <AccountCircleIcon />
               </IconButton>
               <Menu
@@ -182,8 +199,16 @@ const HelpPage = () => {
         </AppBar>
 
         {/* Search Box */}
-        <Box sx={{ textAlign: "center", height: "200px", bgcolor: "#ffffff", p: 4, borderRadius: 5, mb: 3, mt: 4 }}>
-          <Typography variant="h6" fontWeight="bold" mb={2}>
+        <Box sx={{ 
+          textAlign: "center", 
+          height: "200px", 
+          bgcolor: theme.palette.background.paper, 
+          p: 4, 
+          borderRadius: 5, 
+          mb: 3, 
+          mt: 4 
+        }}>
+          <Typography variant="h6" fontWeight="bold" mb={2} color="text.primary">
             How can we help you?
           </Typography>
           <TextField
@@ -195,7 +220,7 @@ const HelpPage = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search />
+                  <Search color="action" />
                 </InputAdornment>
               ),
               endAdornment: (
@@ -203,22 +228,38 @@ const HelpPage = () => {
                   Search
                 </Button>
               ),
-              sx: { borderRadius: 50 } // Fully rounded search bar
+              sx: { borderRadius: 50 }
             }}
-            sx={{ maxWidth: 500, bgcolor: "white" }}
+            sx={{ maxWidth: 500, bgcolor: theme.palette.background.paper }}
           />
         </Box>
 
         {/* Search Results */}
         {searchTerm && filteredItems.length > 0 && (
-          <Box sx={{ bgcolor: "white", p: 2, borderRadius: 2, mb: 2 }}>
-            <Typography variant="subtitle1" fontWeight="bold">
+          <Box sx={{ 
+            bgcolor: theme.palette.background.paper, 
+            p: 2, 
+            borderRadius: 2, 
+            mb: 2 
+          }}>
+            <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
               Search Results:
             </Typography>
             <List>
               {filteredItems.map((item, index) => (
-                <ListItemButton key={index} onClick={() => console.log("Navigate to", item)}>
-                  <ListItemText primary={item} />
+                <ListItemButton 
+                  key={index} 
+                  onClick={() => console.log("Navigate to", item)}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.hover
+                    }
+                  }}
+                >
+                  <ListItemText 
+                    primary={item} 
+                    primaryTypographyProps={{ color: 'text.primary' }}
+                  />
                 </ListItemButton>
               ))}
             </List>
@@ -226,8 +267,12 @@ const HelpPage = () => {
         )}
 
         {/* Help Topics - Now horizontal */}
-        <Box sx={{ bgcolor: "#ffffff", p: 3, borderRadius: 2 }}>
-          <Typography variant="h6" fontWeight="bold" mb={2}>
+        <Box sx={{ 
+          bgcolor: theme.palette.background.paper, 
+          p: 3, 
+          borderRadius: 2 
+        }}>
+          <Typography variant="h6" fontWeight="bold" mb={2} color="text.primary">
             Help Topics
           </Typography>
           <Grid container spacing={2}>
@@ -239,13 +284,20 @@ const HelpPage = () => {
                     p: 2,
                     borderRadius: 2,
                     cursor: "pointer",
-                    "&:hover": { bgcolor: "action.hover" }
+                    bgcolor: theme.palette.background.default,
+                    "&:hover": { 
+                      bgcolor: theme.palette.action.hover 
+                    }
                   }}
                   onClick={() => navigate(topic.route)}
                 >
                   <Box display="flex" alignItems="center">
-                    <ListItemIcon sx={{ minWidth: 36 }}>{topic.icon}</ListItemIcon>
-                    <Typography variant="body1">{topic.text}</Typography>
+                    <ListItemIcon sx={{ minWidth: 36, color: theme.palette.text.primary }}>
+                      {topic.icon}
+                    </ListItemIcon>
+                    <Typography variant="body1" color="text.primary">
+                      {topic.text}
+                    </Typography>
                   </Box>
                 </Paper>
               </Grid>

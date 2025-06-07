@@ -1,33 +1,49 @@
 import axios from "axios";
-import { User } from "./userApi";
 
-const API = axios.create({
+export interface User {
+  id?: number;
+  epf: string;
+  employeeName: string;
+  username: string;
+  department: string;
+  contact: string;
+  email: string;
+  userType: string;
+  availability: boolean;
+  password: string;
+  status: string;
+}
+
+// Create axios instance with base configuration
+const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true,
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   }
 });
 
-// Request interceptor to attach token
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Add request interceptor to inject token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
-// Response interceptor to handle errors
-API.interceptors.response.use(
-  response => response,
-  error => {
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Token expired or invalid
+      localStorage.removeItem('authToken');
     }
     return Promise.reject(error);
   }
@@ -35,39 +51,51 @@ API.interceptors.response.use(
 
 export const fetchUsers = async (): Promise<User[]> => {
   try {
-    const response = await API.get("/api/all-users"); 
+    const response = await api.get("/api/all-users");
+    
+    if (!response.data) {
+      throw new Error('No data received from server');
+    }
+
     return response.data.data || response.data;
   } catch (error) {
-    console.error("Failed to fetch users:", error);
+    console.error('Error fetching users:', error);
     throw error;
   }
 };
 
 export const createUser = async (userData: User): Promise<User> => {
   try {
-    const response = await API.post("/api/all-users", userData);
+    const response = await api.post("/api/all-users", userData);
     return response.data;
   } catch (error) {
-    console.error("Failed to create user:", error);
+    console.error('Error creating user:', error);
     throw error;
   }
 };
 
 export const updateUser = async (id: number, userData: User): Promise<User> => {
   try {
-    const response = await API.put(`/api/all-users/${id}`, userData);
+    const response = await api.put(`/api/all-users/${id}`, userData);
     return response.data;
   } catch (error) {
-    console.error("Failed to update user:", error);
+    console.error('Error updating user:', error);
     throw error;
   }
 };
 
 export const deleteUser = async (id: number): Promise<void> => {
   try {
-    await API.delete(`/api/all-users/${id}`);
+    await api.delete(`/api/all-users/${id}`);
   } catch (error) {
-    console.error("Failed to delete user:", error);
+    console.error('Error deleting user:', error);
     throw error;
   }
+};
+
+export const userManagementService = {
+  fetchUsers,
+  createUser,
+  updateUser,
+  deleteUser,
 };

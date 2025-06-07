@@ -21,7 +21,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  useTheme
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -36,10 +37,9 @@ import {
 import { Delete } from '@mui/icons-material';
 import axios from 'axios';
 import Sidebar from "../../components/Sidebar";
-import Footer from '../../components/Footer';
 import { Menu, MenuItem, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-
+import { useCustomTheme } from "../../context/ThemeContext";
 interface ProductionData {
   buyer: string;
   gg: string;
@@ -131,6 +131,8 @@ const ProductionUpdatePage = () => {
     location: '',
     defectCode: ''
   });
+    const theme = useTheme();
+    useCustomTheme();
 
   const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -317,7 +319,7 @@ const ProductionUpdatePage = () => {
   };
 
   return (
-    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -326,13 +328,13 @@ const ProductionUpdatePage = () => {
         onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: "white", boxShadow: 2 }}>
+        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
           <Toolbar>
             <IconButton edge="start" color="inherit" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <MenuIcon sx={{ color: 'black' }} />
             </IconButton>
 
-            <Typography variant="h6" sx={{ flexGrow: 1, color: "black" }}>
+            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
               Production Update
             </Typography>
 
@@ -561,7 +563,7 @@ const ProductionUpdatePage = () => {
             </Card>
           )}
         </Box>
-        <Footer />
+        
 
         {/* Rework Dialog */}
         <Dialog
