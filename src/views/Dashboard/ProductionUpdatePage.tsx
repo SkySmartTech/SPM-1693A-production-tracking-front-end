@@ -1,3 +1,4 @@
+// src/pages/ProductionUpdate/ProductionUpdatePage.tsx
 import { useState, useEffect } from 'react';
 import {
   AppBar,
@@ -35,11 +36,17 @@ import {
   AssignmentTurnedIn
 } from '@mui/icons-material';
 import { Delete } from '@mui/icons-material';
-import axios from 'axios';
-import Sidebar from "../../components/Sidebar";
-import { Menu, MenuItem, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useCustomTheme } from "../../context/ThemeContext";
+import Sidebar from "../../components/Sidebar";
+import { Menu, MenuItem, Badge } from "@mui/material";
+import {
+  fetchDropdownOptions,
+  fetchDefectReworkOptions,
+  fetchProductionData,
+  submitDefectRework
+} from '../../api/productionApi';
+
 interface ProductionData {
   buyer: string;
   gg: string;
@@ -131,23 +138,13 @@ const ProductionUpdatePage = () => {
     location: '',
     defectCode: ''
   });
-    const theme = useTheme();
-    useCustomTheme();
-
-  const API_BASE_URL = 'http://localhost:8000/api';
+  const theme = useTheme();
+  useCustomTheme();
 
   useEffect(() => {
-    const fetchDropdownOptions = async () => {
+    const loadData = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/production-options`);
-        const options = {
-          teams: response.data.teams || [],
-          styles: response.data.styles || [],
-          colors: response.data.colors || [],
-          sizes: response.data.sizes || [],
-          checkPoints: response.data.checkPoints || []
-        };
-
+        const options = await fetchDropdownOptions();
         setDropdownOptions(options);
 
         if (options.teams.length > 0) {
@@ -160,49 +157,40 @@ const ProductionUpdatePage = () => {
           });
         }
       } catch (error) {
-        console.error('Error fetching dropdown options:', error);
+        console.error('Error loading dropdown options:', error);
         showSnackbar('Failed to load dropdown options', 'error');
       } finally {
         setLoading(prev => ({ ...prev, options: false }));
       }
     };
 
-    fetchDropdownOptions();
-  }, []);
-
-  useEffect(() => {
-    const fetchDefectReworkOptions = async () => {
+    const loadDefectReworkOptions = async () => {
       try {
         setLoading(prev => ({ ...prev, defectReworkOptions: true }));
-        const response = await axios.get(`${API_BASE_URL}/defect-rework-options`);
-        setDefectReworkOptions({
-          parts: response.data.parts || [],
-          locations: response.data.locations || [],
-          defectCodes: response.data.defectCodes || []
-        });
+        const options = await fetchDefectReworkOptions();
+        setDefectReworkOptions(options);
       } catch (error) {
-        console.error('Error fetching defect/rework options:', error);
+        console.error('Error loading defect/rework options:', error);
         showSnackbar('Failed to load defect/rework options', 'error');
       } finally {
         setLoading(prev => ({ ...prev, defectReworkOptions: false }));
       }
     };
 
-    fetchDefectReworkOptions();
+    loadData();
+    loadDefectReworkOptions();
   }, []);
 
   useEffect(() => {
-    const fetchProductionData = async () => {
+    const loadProductionData = async () => {
       if (!filters.teamNo) return;
 
       try {
         setLoading(prev => ({ ...prev, data: true }));
-        const response = await axios.get(`${API_BASE_URL}/production-data`, {
-          params: filters
-        });
-        setData(response.data || defaultProductionData);
+        const productionData = await fetchProductionData(filters);
+        setData(productionData);
       } catch (error) {
-        console.error('Error fetching production data:', error);
+        console.error('Error loading production data:', error);
         showSnackbar('Failed to load production data', 'error');
         setData(defaultProductionData);
       } finally {
@@ -210,7 +198,7 @@ const ProductionUpdatePage = () => {
       }
     };
 
-    fetchProductionData();
+    loadProductionData();
   }, [filters]);
 
   const handleChange = async (event: SelectChangeEvent<string>) => {
@@ -220,13 +208,11 @@ const ProductionUpdatePage = () => {
 
     try {
       setLoading(prev => ({ ...prev, submit: true }));
-      const response = await axios.get(`${API_BASE_URL}/production-data`, {
-        params: newFilters
-      });
-      setData(response.data || defaultProductionData);
+      const productionData = await fetchProductionData(newFilters);
+      setData(productionData);
     } catch (error) {
-      console.error('Error updating data with new filters', error);
-      showSnackbar('Failed to update data with new filters', 'error');
+      console.error('Error updating production data:', error);
+      showSnackbar('Failed to update production data', 'error');
     } finally {
       setLoading(prev => ({ ...prev, submit: false }));
     }
@@ -249,18 +235,13 @@ const ProductionUpdatePage = () => {
   const handleSubmit = async (type: 'rework' | 'defect') => {
     try {
       setLoading(prev => ({ ...prev, submit: true }));
-      await axios.post(`${API_BASE_URL}/${type}-submit`, {
-        ...formData,
-        ...filters
-      });
+      await submitDefectRework(type, formData, filters);
       showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} submitted successfully`, 'success');
       handleDialogClose(type);
 
       // Refresh production data
-      const response = await axios.get(`${API_BASE_URL}/production-data`, {
-        params: filters
-      });
-      setData(response.data || defaultProductionData);
+      const productionData = await fetchProductionData(filters);
+      setData(productionData);
     } catch (error) {
       console.error(`Error submitting ${type}:`, error);
       showSnackbar(`Failed to submit ${type}`, 'error');
@@ -564,7 +545,6 @@ const ProductionUpdatePage = () => {
           )}
         </Box>
         
-
         {/* Rework Dialog */}
         <Dialog
           open={dialogOpen.rework}

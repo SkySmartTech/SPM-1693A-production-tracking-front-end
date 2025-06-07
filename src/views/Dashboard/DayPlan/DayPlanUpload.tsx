@@ -1,12 +1,21 @@
 import React, { useState } from "react";
 import {
-  Box, Typography, Button, AppBar, Toolbar, IconButton,
-  CssBaseline, Menu, MenuItem,
+  Box,
+  Typography,
+  Button,
+  AppBar,
+  Toolbar,
+  IconButton,
+  CssBaseline,
+  Menu,
+  MenuItem,
   Divider,
-  useTheme
+  useTheme,
+  Snackbar,
+  Alert,
+  CircularProgress
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import axios from "axios";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
@@ -14,9 +23,9 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Sidebar from "../../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 import Badge from '@mui/material/Badge';
-import { fetchDayPlans } from "../../../api/dayPlansApi";
 import { useQuery } from "@tanstack/react-query";
 import { useCustomTheme } from "../../../context/ThemeContext";
+import { fetchDayPlans, uploadDayPlanFile, DayPlan } from "../../../api/dayPlanApi";
 
 const DayPlanUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -25,52 +34,90 @@ const DayPlanUpload: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'info'
+  });
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme();
+  useCustomTheme();
 
   // Fetch data using React Query
-  const { data: dayPlansData, isLoading, isError } = useQuery({
+  const { data: dayPlansData = [], isLoading, isError, refetch } = useQuery<DayPlan[]>({
     queryKey: ["day-plans"],
-    queryFn: fetchDayPlans,
+    queryFn: fetchDayPlans
   });
-    const theme = useTheme();
-    useCustomTheme();
 
-  // Handle file selection
+  const handleAuthError = () => {
+    localStorage.removeItem('authToken');
+    navigate('/login');
+    setSnackbar({
+      open: true,
+      message: 'Session expired. Please login again.',
+      severity: 'error'
+    });
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       setFile(event.target.files[0]);
     }
   };
 
-  // Handle file upload
   const handleUpload = async () => {
     if (!file) {
-      alert("Please select a file first.");
+      setSnackbar({
+        open: true,
+        message: 'Please select a file first',
+        severity: 'error'
+      });
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      setUploading(true);
+      setSnackbar({
+        open: true,
+        message: 'Uploading file...',
+        severity: 'info'
       });
 
-      if (response.data.success) {
-        alert("File uploaded successfully!");
-      } else {
-        alert("Upload failed.");
+      const result = await uploadDayPlanFile(file);
+      
+      setSnackbar({
+        open: true,
+        message: result.message,
+        severity: result.success ? 'success' : 'error'
+      });
+
+      if (result.success) {
+        setFile(null);
+        await refetch();
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
-      alert("An error occurred.");
+      let errorMessage = 'An error occurred during upload';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        if (error.message.includes('authentication')) {
+          handleAuthError();
+          return;
+        }
+      }
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
-  // Handle sample file download
   const handleDownloadSample = () => {
-    // Create a sample Excel file structure
     const sampleData = [
       {
         line_no: "1",
@@ -90,7 +137,6 @@ const DayPlanUpload: React.FC = () => {
       }
     ];
 
-    // Convert to CSV format (Excel can open CSV files)
     const headers = Object.keys(sampleData[0]);
     const csvRows = sampleData.map(row => 
       headers.map(fieldName => 
@@ -99,7 +145,6 @@ const DayPlanUpload: React.FC = () => {
     );
     const csvContent = [headers.join(','), ...csvRows].join('\r\n');
 
-    // Create download link
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -110,8 +155,7 @@ const DayPlanUpload: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  // Define DataGrid columns
-  const columns: GridColDef[] = [
+  const columns: GridColDef<DayPlan>[] = [
     { field: "id", headerName: "ID", width: 60 },
     { field: "line_no", headerName: "Line No", width: 50 },
     { field: "resp_employee", headerName: "Resp Employee", width: 100 },
@@ -131,7 +175,7 @@ const DayPlanUpload: React.FC = () => {
     { field: "updated_at", headerName: "Updated At", width: 90 },
   ];
 
-  // Account menu handlers
+  // Menu handlers (same as before)
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -146,11 +190,11 @@ const DayPlanUpload: React.FC = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('authToken');
     navigate("/login");
     handleAccountMenuClose();
   };
 
-  // Notifications menu handlers
   const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationAnchorEl(event.currentTarget);
   };
@@ -164,8 +208,12 @@ const DayPlanUpload: React.FC = () => {
     handleNotificationMenuClose();
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
   return (
-    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh", bgcolor: theme.palette.background.default }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
@@ -174,17 +222,26 @@ const DayPlanUpload: React.FC = () => {
         onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
+        <AppBar position="static" sx={{ 
+          bgcolor: theme.palette.background.paper, 
+          boxShadow: 'none',
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          color: theme.palette.text.primary
+        }}>
           <Toolbar>
-            <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <IconButton 
+              edge="start" 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              color="inherit"
+            >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
               Day Plan Upload
             </Typography>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen}>
+              <IconButton onClick={handleNotificationMenuOpen} color="inherit">
                 <Badge badgeContent={notificationCount} color="error">
                   <NotificationsIcon />
                 </Badge>
@@ -226,11 +283,14 @@ const DayPlanUpload: React.FC = () => {
                 </MenuItem>
               </Menu>
 
-              <IconButton onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}>
+              <IconButton 
+                onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
+                color="inherit"
+              >
                 <FullscreenIcon />
               </IconButton>
 
-              <IconButton onClick={handleAccountMenuOpen}>
+              <IconButton onClick={handleAccountMenuOpen} color="inherit">
                 <AccountCircleIcon />
               </IconButton>
               <Menu
@@ -252,9 +312,15 @@ const DayPlanUpload: React.FC = () => {
             </Box>
           </Toolbar>
         </AppBar>
-        {/* Content */}
-        <Box sx={{ padding: 5, borderRadius: "8px", marginBottom: 5 }}>
-          <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 5 }}>
+
+        <Box sx={{ 
+          padding: 5, 
+          borderRadius: "8px", 
+          marginBottom: 5,
+          bgcolor: theme.palette.background.paper,
+          flexGrow: 1
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 5, color: theme.palette.text.primary }}>
             Day Plan Upload
           </Typography>
 
@@ -265,48 +331,107 @@ const DayPlanUpload: React.FC = () => {
               onChange={handleFileChange}
               style={{ display: "none" }}
               id="file-input"
+              disabled={uploading}
             />
             <label htmlFor="file-input">
-              <Button variant="contained" component="span" sx={{ backgroundColor: "#FFD900", color: "black", "&:hover": { backgroundColor: "#E6C200" } }}>
+              <Button 
+                variant="contained" 
+                component="span" 
+                sx={{ 
+                  backgroundColor: theme.palette.mode === 'light' ? "#FFD900" : "#FFC107",
+                  color: "black", 
+                  "&:hover": { 
+                    backgroundColor: theme.palette.mode === 'light' ? "#E6C200" : "#FFA000" 
+                  }
+                }}
+                disabled={uploading}
+              >
                 Choose File
               </Button>
             </label>
-            <Typography>{file ? file.name : "No file chosen"}</Typography>
+            <Typography color="text.primary">{file ? file.name : "No file chosen"}</Typography>
 
-            {/* Spacer to push buttons to the right */}
             <Box sx={{ flexGrow: 1 }} />
 
             <Button 
               variant="outlined" 
               onClick={handleDownloadSample}
               sx={{ marginRight: 2 }}
+              disabled={uploading}
             >
               Download Sample
             </Button>
 
-            <Button variant="contained" color="primary" onClick={handleUpload}>
-              Upload
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleUpload}
+              disabled={!file || uploading}
+              endIcon={uploading ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {uploading ? 'Uploading...' : 'Upload'}
             </Button>
           </Box>
-          <Box sx={{ height: 400, width: "100%",  borderRadius: "8px", overflowX: "auto" }}>
+          <Box sx={{ 
+            height: 400, 
+            width: "100%",  
+            borderRadius: "8px", 
+            overflowX: "auto",
+            bgcolor: theme.palette.background.paper
+          }}>
             {isLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <Typography>Loading data...</Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '100%',
+                color: theme.palette.text.primary
+              }}>
+                <CircularProgress />
               </Box>
             ) : isError ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '100%'
+              }}>
                 <Typography color="error">Error loading data</Typography>
               </Box>
             ) : (
               <DataGrid
-                rows={dayPlansData || []}
+                rows={dayPlansData}
                 columns={columns}
                 pageSizeOptions={[5, 10, 20]}
+                sx={{
+                  '& .MuiDataGrid-cell': {
+                    color: theme.palette.text.primary
+                  },
+                  '& .MuiDataGrid-columnHeaders': {
+                    backgroundColor: theme.palette.background.default,
+                    color: theme.palette.text.primary
+                  }
+                }}
               />
             )}
           </Box>
         </Box>
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
