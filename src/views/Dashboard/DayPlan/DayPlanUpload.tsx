@@ -30,7 +30,7 @@ import { fetchDayPlans, uploadDayPlanFile, DayPlan } from "../../../api/dayPlanA
 const DayPlanUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
@@ -218,8 +218,7 @@ const DayPlanUpload: React.FC = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar position="static" sx={{ 

@@ -34,7 +34,7 @@ const Dashboard = () => {
   const [hourlyData, setHourlyData] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
@@ -112,8 +112,7 @@ const Dashboard = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        
       />
       <Box component="main" sx={{ flexGrow: 1 }}>
         <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper

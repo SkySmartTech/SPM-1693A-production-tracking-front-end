@@ -180,7 +180,7 @@ const UserAccessManagementSystem = () => {
     const [roleDescription, setRoleDescription] = useState<string>("Full system access");
     const [roleType, setRoleType] = useState<'admin' | 'manager' | 'supplier'>('admin');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [hovered, setHovered] = useState(false);
+    const [hovered] = useState(false);
     const [] = useState(false);
     const [loading, setLoading] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -457,8 +457,7 @@ const UserAccessManagementSystem = () => {
             <Sidebar
                 open={sidebarOpen || hovered}
                 setOpen={setSidebarOpen}
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
+               
             />
             <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
                 <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>

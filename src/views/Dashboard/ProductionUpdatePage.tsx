@@ -6,7 +6,6 @@ import {
   Typography,
   IconButton,
   Box,
-  Grid,
   Card,
   CircularProgress,
   Select,
@@ -23,14 +22,16 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  useTheme
+  useTheme,
+  Autocomplete,
+  TextField,
+  Stack
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Notifications as NotificationsIcon,
   Fullscreen as FullscreenIcon,
   AccountCircle as AccountCircleIcon,
-  ExpandMore,
   Person,
   Style as StyleIcon,
   AssignmentTurnedIn
@@ -41,11 +42,13 @@ import { useCustomTheme } from "../../context/ThemeContext";
 import Sidebar from "../../components/Sidebar";
 import { Menu, MenuItem, Badge } from "@mui/material";
 import {
-  fetchDropdownOptions,
-  fetchDefectReworkOptions,
-  fetchProductionData,
-  submitDefectRework
+  Production,
+  fetchColorData,
+  fetchStyleData,
+  fetchSizeData
 } from '../../api/productionApi';
+import { Controller, useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 
 interface ProductionData {
   buyer: string;
@@ -66,18 +69,19 @@ interface Filters {
   checkPoint: string;
 }
 
-interface DropdownOptions {
-  teams: string[];
-  styles: string[];
-  colors: string[];
-  sizes: string[];
-  checkPoints: string[];
-}
-
 interface DefectReworkData {
   parts: string[];
   locations: string[];
   defectCodes: string[];
+}
+
+interface ColorOption {
+  color: string;
+}
+
+interface StyleOption {
+  description: string;
+  style_no: string;
 }
 
 const defaultProductionData: ProductionData = {
@@ -93,13 +97,6 @@ const defaultProductionData: ProductionData = {
 
 const ProductionUpdatePage = () => {
   const [data, setData] = useState<ProductionData>(defaultProductionData);
-  const [dropdownOptions, setDropdownOptions] = useState<DropdownOptions>({
-    teams: [],
-    styles: [],
-    colors: [],
-    sizes: [],
-    checkPoints: []
-  });
   const [defectReworkOptions, setDefectReworkOptions] = useState<DefectReworkData>({
     parts: [],
     locations: [],
@@ -107,12 +104,12 @@ const ProductionUpdatePage = () => {
   });
   const [loading, setLoading] = useState({
     data: false,
-    options: true,
+    options: false,
     submit: false,
     defectReworkOptions: false
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
@@ -127,7 +124,7 @@ const ProductionUpdatePage = () => {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
-    severity: 'success' as 'success' | 'error'
+    severity: 'success' as 'success' | 'error' | 'info' | 'warning'
   });
   const [dialogOpen, setDialogOpen] = useState({
     rework: false,
@@ -141,11 +138,45 @@ const ProductionUpdatePage = () => {
   const theme = useTheme();
   useCustomTheme();
 
+  // Mock functions to replace the missing API functions
+  const fetchDropdownOptions = async () => {
+    return {
+      teams: ['Team 1', 'Team 2'],
+      styles: ['Style 1', 'Style 2'],
+      colors: ['Red', 'Blue'],
+      sizes: ['S', 'M', 'L'],
+      checkPoints: ['Check 1', 'Check 2']
+    };
+  };
+
+  const fetchDefectReworkOptions = async () => {
+    return {
+      parts: ['Sleeve', 'Collar', 'Body'],
+      locations: ['Front', 'Back', 'Side'],
+      defectCodes: ['DC001', 'DC002', 'DC003']
+    };
+  };
+
+  const fetchProductionData = async (_filters: Filters) => {
+    return {
+      ...defaultProductionData,
+      buyer: 'Sample Buyer',
+      gg: '123',
+      smv: '5.5',
+      presentCarder: '25'
+    };
+  };
+
+  const submitDefectRework = async (type: 'rework' | 'defect', data: any, filters: Filters) => {
+    console.log(`Submitting ${type}`, data, filters);
+    return true;
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(prev => ({ ...prev, options: true }));
         const options = await fetchDropdownOptions();
-        setDropdownOptions(options);
 
         if (options.teams.length > 0) {
           setFilters({
@@ -201,24 +232,7 @@ const ProductionUpdatePage = () => {
     loadProductionData();
   }, [filters]);
 
-  const handleChange = async (event: SelectChangeEvent<string>) => {
-    const { name, value } = event.target as { name: keyof Filters; value: string };
-    const newFilters = { ...filters, [name]: value };
-    setFilters(newFilters);
-
-    try {
-      setLoading(prev => ({ ...prev, submit: true }));
-      const productionData = await fetchProductionData(newFilters);
-      setData(productionData);
-    } catch (error) {
-      console.error('Error updating production data:', error);
-      showSnackbar('Failed to update production data', 'error');
-    } finally {
-      setLoading(prev => ({ ...prev, submit: false }));
-    }
-  };
-
-  const handleFormChange = (event: SelectChangeEvent<string>) => {
+  const handleFormChange = (event: SelectChangeEvent) => {
     const { name, value } = event.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -250,7 +264,7 @@ const ProductionUpdatePage = () => {
     }
   };
 
-  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
     setSnackbar({ open: true, message, severity });
   };
 
@@ -266,7 +280,6 @@ const ProductionUpdatePage = () => {
     }
   };
 
-  // Account menu handlers
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -285,7 +298,6 @@ const ProductionUpdatePage = () => {
     handleAccountMenuClose();
   };
 
-  // Notifications menu handlers
   const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationAnchorEl(event.currentTarget);
   };
@@ -299,14 +311,46 @@ const ProductionUpdatePage = () => {
     handleNotificationMenuClose();
   };
 
+  const {
+    register,
+    control,
+    formState: { errors },
+  } = useForm<Production>({
+    reValidateMode: "onChange",
+    mode: "onChange",
+  });
+
+  const { data: teamData } = useQuery<StyleOption[]>({
+    queryKey: ["teams"],
+    queryFn: fetchSizeData,
+  });
+
+  const { data: colorData } = useQuery<ColorOption[]>({
+    queryKey: ["colors"],
+    queryFn: fetchColorData,
+  });
+
+  const { data: styleData } = useQuery<StyleOption[]>({
+    queryKey: ["styles"],
+    queryFn: fetchStyleData,
+  });
+
+  const { data: sizeData } = useQuery<StyleOption[]>({
+    queryKey: ["sizes"],
+    queryFn: fetchSizeData,
+  });
+
+  useQuery<StyleOption[]>({
+    queryKey: ["checkPoints"],
+    queryFn: fetchSizeData,
+  });
+
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
@@ -398,14 +442,14 @@ const ProductionUpdatePage = () => {
           ) : (
             <Card sx={{ p: 3, borderRadius: '12px', boxShadow: 3 }}>
               {/* Top Info Section */}
-              <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Stack direction="row" spacing={3} sx={{ mb: 3 }}>
                 {[
                   { label: 'BUYER', value: data.buyer, icon: <Person /> },
                   { label: 'GG', value: data.gg, icon: <StyleIcon /> },
                   { label: 'SMV', value: data.smv, icon: <AssignmentTurnedIn /> },
                   { label: 'PRESENT CARDER', value: data.presentCarder, icon: <Person /> }
                 ].map((item, index) => (
-                  <Grid item xs={12} sm={3} key={index}>
+                  <Box key={index} sx={{ width: { xs: '100%', sm: '25%' } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 4 }}>
                       <Avatar sx={{ bgcolor: 'primary.main' }}>{item.icon}</Avatar>
                       <div>
@@ -415,39 +459,129 @@ const ProductionUpdatePage = () => {
                         <Typography variant="h6">{item.value}</Typography>
                       </div>
                     </Box>
-                  </Grid>
+                  </Box>
                 ))}
-              </Grid>
+              </Stack>
 
-              {/* Filters Section */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                {[
-                  { label: 'TEAM NO', name: 'teamNo', options: dropdownOptions.teams },
-                  { label: 'STYLE', name: 'style', options: dropdownOptions.styles },
-                  { label: 'COLOR', name: 'color', options: dropdownOptions.colors },
-                  { label: 'SIZE', name: 'size', options: dropdownOptions.sizes },
-                  { label: 'CHECK POINT', name: 'checkPoint', options: dropdownOptions.checkPoints }
-                ].map((filter, index) => (
-                  <Grid item xs={12} md={2.4} key={index}>
-                    <FormControl fullWidth>
-                      <InputLabel>{filter.label}</InputLabel>
-                      <Select
-                        name={filter.name}
-                        value={filters[filter.name as keyof Filters] || ''}
-                        label={filter.label}
-                        onChange={handleChange}
-                        IconComponent={ExpandMore}
-                        sx={{ borderRadius: '8px', marginBottom: 4 }}
-                        disabled={loading.submit || loading.data || filter.options.length === 0}
-                      >
-                        {filter.options.map((option, i) => (
-                          <MenuItem key={i} value={option}>{option}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                ))}
-              </Grid>
+              {/* Dropdown Section */}
+              <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+
+                <Controller
+                  control={control}
+                  {...register("teamNo", { required: true })}
+                  render={({ field }) => (
+                    <Autocomplete
+                      {...field}
+                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      size="small"
+                      options={teamData?.map(teamNo => teamNo.description) || []}
+                      sx={{ flex: 1, margin: "0.5rem" }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.teamNo}
+                          helperText={errors.teamNo && "Required"}
+                          label="Team No"
+                          name="teamNo"
+                        />
+                      )}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  {...register("color", { required: true })}
+                  render={({ field }) => (
+                    <Autocomplete
+                      {...field}
+                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      size="small"
+                      options={colorData?.map(color => color.color) || []}
+                      sx={{ flex: 1, margin: "0.5rem" }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.color}
+                          helperText={errors.color && "Required"}
+                          label="Color"
+                          name="color"
+                        />
+                      )}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  {...register("style", { required: true })}
+                  render={({ field }) => (
+                    <Autocomplete
+                      {...field}
+                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      size="small"
+                      options={styleData?.map(style => style.style_no) || []}
+                      sx={{ flex: 1, margin: "0.5rem" }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.style}
+                          helperText={errors.style && "Required"}
+                          label="Style"
+                          name="style"
+                        />
+                      )}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  {...register("size", { required: true })}
+                  render={({ field }) => (
+                    <Autocomplete
+                      {...field}
+                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      size="small"
+                      options={sizeData?.map(size => size.description) || []}
+                      sx={{ flex: 1, margin: "0.5rem" }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.style}
+                          helperText={errors.style && "Required"}
+                          label="Size"
+                          name="size"
+                        />
+                      )}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  {...register("checkPoint", { required: true })}
+                  render={({ field }) => (
+                    <Autocomplete
+                      {...field}
+                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      size="small"
+                      options={sizeData?.map(checkPoint => checkPoint.description) || []}
+                      sx={{ flex: 1, margin: "0.5rem" }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.checkPoint}
+                          helperText={errors.checkPoint && "Required"}
+                          label="Check Point"
+                          name="checkPoint"
+                        />
+                      )}
+                    />
+                  )}
+                />
+              </Stack>
 
               {/* Status Cards */}
               {loading.data ? (
@@ -455,7 +589,7 @@ const ProductionUpdatePage = () => {
                   <CircularProgress size={40} />
                 </Box>
               ) : (
-                <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
                   {[
                     {
                       title: 'Success',
@@ -479,7 +613,7 @@ const ProductionUpdatePage = () => {
                       onClick: () => handleDialogOpen('defect')
                     }
                   ].map((status, index) => (
-                    <Grid item xs={12} md={4} key={index}>
+                    <Box key={index} sx={{ width: { xs: '100%', md: '33%' } }}>
                       <Box
                         sx={{
                           p: 3,
@@ -514,15 +648,21 @@ const ProductionUpdatePage = () => {
                           </Typography>
                         </Box>
                       </Box>
-                    </Grid>
+                    </Box>
                   ))}
-                </Grid>
+                </Stack>
               )}
 
               {/* Hourly Boxes */}
-              <Grid container spacing={2}>
+              <Stack
+                direction="row"
+                flexWrap="initial"
+                spacing={2}
+                useFlexGap
+                sx={{ width: '100%', mt: 3 }}
+              >
                 {data.hourlyData.map((value, index) => (
-                  <Grid item xs={12} sm={6} md={3} lg={1.5} key={index}>
+                  <Box key={index} sx={{ width: { xs: '90%', sm: '48%', md: '23%', lg: '15%' } }}>
                     <Box sx={{
                       p: 2,
                       textAlign: 'center',
@@ -538,21 +678,21 @@ const ProductionUpdatePage = () => {
                       <Divider sx={{ my: 1 }} />
                       <Typography variant="h5">{value}</Typography>
                     </Box>
-                  </Grid>
+                  </Box>
                 ))}
-              </Grid>
+              </Stack>
             </Card>
           )}
         </Box>
-        
+
         {/* Rework Dialog */}
         <Dialog
           open={dialogOpen.rework}
           onClose={() => handleDialogClose('rework')}
           sx={{
             '& .MuiDialog-paper': {
-              width: '400px', 
-              maxWidth: 'none' 
+              width: '300px',
+              maxWidth: 'none'
             }
           }}
         >
@@ -628,8 +768,8 @@ const ProductionUpdatePage = () => {
           onClose={() => handleDialogClose('defect')}
           sx={{
             '& .MuiDialog-paper': {
-              width: '400px', 
-              maxWidth: 'none' 
+              width: '400px',
+              maxWidth: 'none'
             }
           }}
         >

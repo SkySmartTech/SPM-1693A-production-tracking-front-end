@@ -99,7 +99,7 @@ const uploadUserPhoto = async (formData: FormData): Promise<void> => {
 
 const UserProfile: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
@@ -240,8 +240,7 @@ const UserProfile: React.FC = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar

@@ -95,7 +95,7 @@ const DayPlanReport = () => {
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
@@ -209,8 +209,7 @@ const DayPlanReport = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        
       />
       
       {/* Main Content */}
