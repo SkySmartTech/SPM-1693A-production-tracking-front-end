@@ -8,7 +8,7 @@ const collapsedWidth = 56;
 
 const MainLayout = () => {
   const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
 
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden" }}>
@@ -16,8 +16,6 @@ const MainLayout = () => {
       <Sidebar
         open={open || hovered}
         setOpen={setOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       />
       <Box
         component="main"

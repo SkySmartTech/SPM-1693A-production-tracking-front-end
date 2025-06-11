@@ -53,18 +53,6 @@ import {
   fetchOperations,
   fetchDefects,
   fetchCheckPoints,
-  createColor,
-  createSize,
-  createStyle,
-  createOperation,
-  createDefect,
-  createCheckPoint,
-  updateColor,
-  updateSize,
-  updateStyle,
-  updateOperation,
-  updateDefect,
-  updateCheckPoint,
   deleteColor,
   deleteSize,
   deleteStyle,
@@ -231,26 +219,25 @@ const SystemManagement = () => {
   const handleFormSubmit = async () => {
     try {
       setLoading(prev => ({ ...prev, form: true }));
-      let result;
       if (editId) {
         // Update existing item
         switch (activeTab) {
-          case 0: result = await updateColor(editId, formData); break;
-          case 1: result = await updateSize(editId, formData); break;
-          case 2: result = await updateStyle(editId, formData); break;
-          case 3: result = await updateOperation(editId, formData); break;
-          case 4: result = await updateDefect(editId, formData); break;
-          case 5: result = await updateCheckPoint(editId, formData); break;
+          case 0: break;
+          case 1: break;
+          case 2: break;
+          case 3: break;
+          case 4: break;
+          case 5: break;
         }
       } else {
         // Create new item
         switch (activeTab) {
-          case 0: result = await createColor(formData); break;
-          case 1: result = await createSize(formData); break;
-          case 2: result = await createStyle(formData); break;
-          case 3: result = await createOperation(formData); break;
-          case 4: result = await createDefect(formData); break;
-          case 5: result = await createCheckPoint(formData); break;
+          case 0: break;
+          case 1: break;
+          case 2: break;
+          case 3: break;
+          case 4: break;
+          case 5: break;
         }
       }
 
