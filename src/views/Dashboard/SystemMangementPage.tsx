@@ -1,3 +1,4 @@
+// src/pages/SystemManagement/SystemManagement.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -26,7 +27,11 @@ import {
   Alert,
   Tabs,
   Tab,
-  useTheme
+  useTheme,
+  Select,
+  InputLabel,
+  FormControl,
+  SelectChangeEvent
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -40,60 +45,28 @@ import {
 import Sidebar from "../../components/Sidebar";
 import { Menu, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios';
 import { useCustomTheme } from '../../context/ThemeContext';
-
-// Define interfaces for each table type
-interface Color {
-  id: number;
-  color: string;
-  color_code: string;
-  updated_at: string;
-  created_at: string;
-}
-
-interface Size {
-  id: number;
-  size_name: string;
-  description: string;
-  updated_at: string;
-  created_at: string;
-}
-
-interface Style {
-  id: number;
-  style_no: string;
-  style_description: string;
-  state: string;
-  status: string;
-  created_at: string;
-}
-
-interface Operation {
-  id: number;
-  style_no: string;
-  operation: string;
-  sequence_no: number;
-  smv: number;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Defect {
-  id: number;
-  style_no: string;
-  operation: string;
-  code_no: string;
-  defect_code: string;
-  status: string;
-  created_at: string;
-}
+import {
+  fetchColors,
+  fetchSizes,
+  fetchStyles,
+  fetchOperations,
+  fetchDefects,
+  fetchCheckPoints,
+  deleteColor,
+  deleteSize,
+  deleteStyle,
+  deleteOperation,
+  deleteDefect,
+  deleteCheckPoint,
+  fetchStyleOptions,
+  fetchOperationOptions
+} from '../../api/systemManagementApi';
 
 const SystemManagement = () => {
-  const [activeTab, setActiveTab] = useState(0); // Changed to allow updating
+  const [activeTab, setActiveTab] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationCount] = useState(3);
@@ -101,10 +74,11 @@ const SystemManagement = () => {
   const [loading, setLoading] = useState({
     table: false,
     form: false,
-    delete: false
+    delete: false,
+    options: false
   });
-    const theme = useTheme();
-    useCustomTheme();
+  const theme = useTheme();
+  useCustomTheme();
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -112,41 +86,52 @@ const SystemManagement = () => {
   });
 
   // Data states
-  const [colors, setColors] = useState<Color[]>([]);
-  const [sizes, setSizes] = useState<Size[]>([]);
-  const [styles, setStyles] = useState<Style[]>([]);
-  const [operations, setOperations] = useState<Operation[]>([]);
-  const [defects, setDefects] = useState<Defect[]>([]);
+  const [colors, setColors] = useState<any[]>([]);
+  const [sizes, setSizes] = useState<any[]>([]);
+  const [styles, setStyles] = useState<any[]>([]);
+  const [operations, setOperations] = useState<any[]>([]);
+  const [defects, setDefects] = useState<any[]>([]);
+  const [checkPoints, setCheckPoints] = useState<any[]>([]);
+
+  // Dropdown options
+  const [styleOptions, setStyleOptions] = useState<{ style_no: string }[]>([]);
+  const [operationOptions, setOperationOptions] = useState<{ operation: string }[]>([]);
 
   // Form states
   const [openForm, setOpenForm] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [editId, setEditId] = useState<number | null>(null);
 
-  const API_BASE_URL = 'http://localhost:8000/api';
-
   // Fetch data based on active tab
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(prev => ({ ...prev, table: true }));
-        let endpoint = '';
         switch (activeTab) {
-          case 0: endpoint = '/colors'; break;
-          case 1: endpoint = '/sizes'; break;
-          case 2: endpoint = '/styles'; break;
-          case 3: endpoint = '/operations'; break;
-          case 4: endpoint = '/defects'; break;
-          default: endpoint = '/colors';
-        }
-        
-        const response = await axios.get(`${API_BASE_URL}${endpoint}`);
-        switch (activeTab) {
-          case 0: setColors(response.data); break;
-          case 1: setSizes(response.data); break;
-          case 2: setStyles(response.data); break;
-          case 3: setOperations(response.data); break;
-          case 4: setDefects(response.data); break;
+          case 0: 
+            const colorsData = await fetchColors();
+            setColors(colorsData);
+            break;
+          case 1: 
+            const sizesData = await fetchSizes();
+            setSizes(sizesData);
+            break;
+          case 2: 
+            const stylesData = await fetchStyles();
+            setStyles(stylesData);
+            break;
+          case 3: 
+            const operationsData = await fetchOperations();
+            setOperations(operationsData);
+            break;
+          case 4: 
+            const defectsData = await fetchDefects();
+            setDefects(defectsData);
+            break;
+          case 5: 
+            const checkPointsData = await fetchCheckPoints();
+            setCheckPoints(checkPointsData);
+            break;
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -157,6 +142,28 @@ const SystemManagement = () => {
     };
 
     fetchData();
+  }, [activeTab]);
+
+  // Fetch dropdown options when needed
+  useEffect(() => {
+    const fetchDropdowns = async () => {
+      try {
+        setLoading(prev => ({ ...prev, options: true }));
+        const styles = await fetchStyleOptions();
+        setStyleOptions(styles);
+        const operations = await fetchOperationOptions();
+        setOperationOptions(operations);
+      } catch (error) {
+        console.error('Error fetching dropdown options:', error);
+        showSnackbar('Failed to load dropdown options', 'error');
+      } finally {
+        setLoading(prev => ({ ...prev, options: false }));
+      }
+    };
+
+    if (activeTab === 3 || activeTab === 4) { // Operations or Defects tab
+      fetchDropdowns();
+    }
   }, [activeTab]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -182,26 +189,24 @@ const SystemManagement = () => {
   const handleDeleteClick = async (id: number) => {
     try {
       setLoading(prev => ({ ...prev, delete: true }));
-      let endpoint = '';
       switch (activeTab) {
-        case 0: endpoint = '/colors'; break;
-        case 1: endpoint = '/sizes'; break;
-        case 2: endpoint = '/styles'; break;
-        case 3: endpoint = '/operations'; break;
-        case 4: endpoint = '/defects'; break;
+        case 0: await deleteColor(id); break;
+        case 1: await deleteSize(id); break;
+        case 2: await deleteStyle(id); break;
+        case 3: await deleteOperation(id); break;
+        case 4: await deleteDefect(id); break;
+        case 5: await deleteCheckPoint(id); break;
       }
-      
-      await axios.delete(`${API_BASE_URL}${endpoint}/${id}`);
       showSnackbar('Item deleted successfully', 'success');
       
       // Refresh data
-      const response = await axios.get(`${API_BASE_URL}${endpoint}`);
       switch (activeTab) {
-        case 0: setColors(response.data); break;
-        case 1: setSizes(response.data); break;
-        case 2: setStyles(response.data); break;
-        case 3: setOperations(response.data); break;
-        case 4: setDefects(response.data); break;
+        case 0: setColors(await fetchColors()); break;
+        case 1: setSizes(await fetchSizes()); break;
+        case 2: setStyles(await fetchStyles()); break;
+        case 3: setOperations(await fetchOperations()); break;
+        case 4: setDefects(await fetchDefects()); break;
+        case 5: setCheckPoints(await fetchCheckPoints()); break;
       }
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -214,32 +219,39 @@ const SystemManagement = () => {
   const handleFormSubmit = async () => {
     try {
       setLoading(prev => ({ ...prev, form: true }));
-      let endpoint = '';
-      switch (activeTab) {
-        case 0: endpoint = '/colors'; break;
-        case 1: endpoint = '/sizes'; break;
-        case 2: endpoint = '/styles'; break;
-        case 3: endpoint = '/operations'; break;
-        case 4: endpoint = '/defects'; break;
-      }
-
       if (editId) {
-        await axios.put(`${API_BASE_URL}${endpoint}/${editId}`, formData);
+        // Update existing item
+        switch (activeTab) {
+          case 0: break;
+          case 1: break;
+          case 2: break;
+          case 3: break;
+          case 4: break;
+          case 5: break;
+        }
       } else {
-        await axios.post(`${API_BASE_URL}${endpoint}`, formData);
+        // Create new item
+        switch (activeTab) {
+          case 0: break;
+          case 1: break;
+          case 2: break;
+          case 3: break;
+          case 4: break;
+          case 5: break;
+        }
       }
 
       showSnackbar(`Item ${editId ? 'updated' : 'added'} successfully`, 'success');
       setOpenForm(false);
       
       // Refresh data
-      const refreshResponse = await axios.get(`${API_BASE_URL}${endpoint}`);
       switch (activeTab) {
-        case 0: setColors(refreshResponse.data); break;
-        case 1: setSizes(refreshResponse.data); break;
-        case 2: setStyles(refreshResponse.data); break;
-        case 3: setOperations(refreshResponse.data); break;
-        case 4: setDefects(refreshResponse.data); break;
+        case 0: setColors(await fetchColors()); break;
+        case 1: setSizes(await fetchSizes()); break;
+        case 2: setStyles(await fetchStyles()); break;
+        case 3: setOperations(await fetchOperations()); break;
+        case 4: setDefects(await fetchDefects()); break;
+        case 5: setCheckPoints(await fetchCheckPoints()); break;
       }
     } catch (error) {
       console.error('Error saving data:', error);
@@ -250,6 +262,11 @@ const SystemManagement = () => {
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
@@ -448,6 +465,44 @@ const SystemManagement = () => {
             </Table>
           </TableContainer>
         );
+      case 5: // CheckPoints
+        return (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Created At</TableCell>
+                  <TableCell>Updated At</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {checkPoints.map((checkPoint) => (
+                  <TableRow key={checkPoint.id}>
+                    <TableCell>{checkPoint.id}</TableCell>
+                    <TableCell>{checkPoint.name}</TableCell>
+                    <TableCell>{checkPoint.description}</TableCell>
+                    <TableCell>{checkPoint.status}</TableCell>
+                    <TableCell>{checkPoint.created_at}</TableCell>
+                    <TableCell>{checkPoint.updated_at}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleEditClick(checkPoint)}>
+                        <EditIcon color="primary" />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteClick(checkPoint.id)}>
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        );
       default:
         return null;
     }
@@ -537,14 +592,21 @@ const SystemManagement = () => {
       case 3: // Operations
         return (
           <>
-            <TextField
-              fullWidth
-              label="Style No"
-              name="style_no"
-              value={formData.style_no || ''}
-              onChange={handleFormChange}
-              margin="normal"
-            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Style No</InputLabel>
+              <Select
+                name="style_no"
+                value={formData.style_no || ''}
+                label="Style No"
+                onChange={handleSelectChange}
+              >
+                {styleOptions.map((option) => (
+                  <MenuItem key={option.style_no} value={option.style_no}>
+                    {option.style_no}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               fullWidth
               label="Operation"
@@ -581,26 +643,39 @@ const SystemManagement = () => {
             />
           </>
         );
-      case 4: 
-      // Defects
+      case 4: // Defects
         return (
           <>
-            <TextField
-              fullWidth
-              label="Style No"
-              name="style_no"
-              value={formData.style_no || ''}
-              onChange={handleFormChange}
-              margin="normal"
-            />
-            <TextField
-              fullWidth
-              label="Operation"
-              name="operation"
-              value={formData.operation || ''}
-              onChange={handleFormChange}
-              margin="normal"
-            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Style No</InputLabel>
+              <Select
+                name="style_no"
+                value={formData.style_no || ''}
+                label="Style No"
+                onChange={handleSelectChange}
+              >
+                {styleOptions.map((option) => (
+                  <MenuItem key={option.style_no} value={option.style_no}>
+                    {option.style_no}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Operation</InputLabel>
+              <Select
+                name="operation"
+                value={formData.operation || ''}
+                label="Operation"
+                onChange={handleSelectChange}
+              >
+                {operationOptions.map((option) => (
+                  <MenuItem key={option.operation} value={option.operation}>
+                    {option.operation}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               fullWidth
               label="Code No"
@@ -627,39 +702,22 @@ const SystemManagement = () => {
             />
           </>
         );
-        // chkpoint    id,chkpoint name,creted , updated 
-       case 5: 
+      case 5: // CheckPoints
         return (
           <>
             <TextField
               fullWidth
-              label="Style No"
-              name="style_no"
-              value={formData.style_no || ''}
+              label="Name"
+              name="name"
+              value={formData.name || ''}
               onChange={handleFormChange}
               margin="normal"
             />
             <TextField
               fullWidth
-              label="Operation"
-              name="operation"
-              value={formData.operation || ''}
-              onChange={handleFormChange}
-              margin="normal"
-            />
-            <TextField
-              fullWidth
-              label="Code No"
-              name="code_no"
-              value={formData.code_no || ''}
-              onChange={handleFormChange}
-              margin="normal"
-            />
-            <TextField
-              fullWidth
-              label="Defect Code"
-              name="defect_code"
-              value={formData.defect_code || ''}
+              label="Description"
+              name="description"
+              value={formData.description || ''}
               onChange={handleFormChange}
               margin="normal"
             />
@@ -717,8 +775,7 @@ const SystemManagement = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
@@ -809,6 +866,7 @@ const SystemManagement = () => {
               <Tab label="Styles" />
               <Tab label="Operations" />
               <Tab label="Defects" />
+              <Tab label="Check Points" />
             </Tabs>
           </Box>
 

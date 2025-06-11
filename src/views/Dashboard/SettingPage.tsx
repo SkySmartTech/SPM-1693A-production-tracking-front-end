@@ -31,7 +31,7 @@ import { useNavigate } from "react-router-dom";
 
 const SettingsPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const { mode, toggleTheme } = useCustomTheme(); // Updated to use mode and toggleTheme
   const theme = useTheme();
@@ -94,8 +94,7 @@ const SettingsPage = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        
       />
       <Box sx={{
         flexGrow: 1,

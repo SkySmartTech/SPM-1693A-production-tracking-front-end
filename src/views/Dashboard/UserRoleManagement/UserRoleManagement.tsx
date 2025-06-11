@@ -34,7 +34,7 @@ import { useCustomTheme } from "../../../context/ThemeContext";
 const UserAccessManagement = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [] = useState("");
-  const [hovered, setHovered] = useState(false);
+  const [hovered] = useState(false);
   const [openAddUser, setOpenAddUser] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newUser, setNewUser] = useState({ id: "", name: "", role: "Admin" });
@@ -173,8 +173,7 @@ const UserAccessManagement = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+    
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>

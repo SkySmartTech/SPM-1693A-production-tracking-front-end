@@ -32,14 +32,13 @@ import { useQueryClient } from "@tanstack/react-query";
 interface SidebarProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
+  
 }
 
 const drawerWidth = 250;
 const collapsedWidth = 56;
 
-const Sidebar = ({ open, setOpen, onMouseEnter, onMouseLeave }: SidebarProps) => {
+const Sidebar = ({ open, setOpen }: SidebarProps) => {
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({});
   const navigate = useNavigate();
   const { mode } = useThemeMode();
@@ -160,8 +159,7 @@ const Sidebar = ({ open, setOpen, onMouseEnter, onMouseLeave }: SidebarProps) =>
           borderRight: 'none',
         },
       }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+     
     >
       <Toolbar />
       <Box
