@@ -1,4 +1,3 @@
-// src/views/Dashboard/UserManagement/UserManagementTable.tsx
 import React from "react";
 import {
   Box,
@@ -14,8 +13,7 @@ import {
   CircularProgress
 } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
-import { User } from "../../../api/userApi";
-
+import { User } from "../../../types/userManagementTypes";
 interface UserManagementTableProps {
   users: User[];
   handleEdit: (id: number) => void;
@@ -53,6 +51,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
                   "Email",
                   "User Type",
                   "Availability",
+                  "Status",
                   "Actions"
                 ].map((header) => (
                   <TableCell key={header} sx={{ fontWeight: "bold" }}>
@@ -73,7 +72,8 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
                     <TableCell>{user.contact}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.userType}</TableCell>
-                    <TableCell>{user.availability ? "Active" : "Inactive"}</TableCell>
+                    <TableCell>{user.availability ? "Available" : "Unavailable"}</TableCell>
+                    <TableCell>{user.status ? "Active" : "Inactive"}</TableCell>
                     <TableCell>
                       <IconButton onClick={() => handleEdit(user.id!)} color="primary">
                         <EditIcon />
@@ -86,7 +86,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={10} align="center">
+                  <TableCell colSpan={11} align="center">
                     No users available.
                   </TableCell>
                 </TableRow>
