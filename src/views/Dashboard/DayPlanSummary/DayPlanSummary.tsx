@@ -222,7 +222,7 @@ const DayPlanReport = () => {
             </IconButton>
 
             <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
-              Day Plan Summary
+              Summary
             </Typography>
 
             {/* Icons */}

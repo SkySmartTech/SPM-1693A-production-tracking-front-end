@@ -17,7 +17,7 @@ export const userSchema = z.object({
   email: z.string().email("Invalid email address"),
   userType: z.string().min(1, "User type is required"),
   availability: z.boolean().optional(),
-  status: z.string().optional(),
+  status: z.boolean().optional(),
 });
 
 export type User = z.infer<typeof userSchema>;

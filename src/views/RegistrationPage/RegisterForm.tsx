@@ -43,7 +43,7 @@ const statusOptions = ["Active", "Inactive"];
 
 interface FormData extends Omit<User, 'availability'> {
   availability: string;
-  status: string;
+  status: boolean;
   confirmPassword: string;
 }
 
