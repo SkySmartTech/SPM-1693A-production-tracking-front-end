@@ -8,41 +8,28 @@ import {
   Paper,
   Stack,
   AppBar,
-  Toolbar,
-  IconButton,
   CssBaseline,
-  Divider,
   Snackbar,
   Alert,
   CircularProgress,
-  Badge,
   useTheme
 } from "@mui/material";
-import {
-  Menu as MenuIcon,
-  Notifications as NotificationsIcon,
-  Fullscreen as FullscreenIcon,
-  AccountCircle as AccountCircleIcon,
-} from "@mui/icons-material";
 import UserManagementTable from "./UserManagementTable";
 import Sidebar from "../../../components/Sidebar";
-import { Menu } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCustomTheme } from "../../../context/ThemeContext";
-import { 
-  User, 
-  departments, 
-  userTypes, 
-  availabilityOptions, 
-  statusOptions 
-} from "../../../types/userManagementTypes";
-import { 
-  fetchUsers, 
-  createUser, 
-  updateUser, 
-  deactivateUser 
+import {
+  User,
+  departments,
+  userTypes,
+  availabilityOptions} from "../../../types/userManagementTypes";
+import {
+  fetchUsers,
+  createUser,
+  updateUser,
+  deactivateUser
 } from "../../../api/userManagementApi";
+import Navbar from "../../../components/Navbar";
 
 const UserManagement: React.FC = () => {
   const [form, setForm] = useState<Omit<User, 'id'> & { id?: number }>({
@@ -54,16 +41,11 @@ const UserManagement: React.FC = () => {
     email: "",
     userType: "",
     availability: false,
-    password: "",
-    password_confirmation: "",
-    status: true
+    password: ""
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationCount] = useState(3);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -72,14 +54,13 @@ const UserManagement: React.FC = () => {
   const theme = useTheme();
   useCustomTheme();
 
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // Fetch active users
   const { data: users = [], isLoading: isDataLoading } = useQuery<User[]>({
     queryKey: ["users"],
-    queryFn: () => fetchUsers().then(users => 
-      users.filter(user => user.status === true)
+    queryFn: () => fetchUsers().then(users =>
+      users.filter(user => user.availability === true)
     ),
   });
 
@@ -142,7 +123,7 @@ const UserManagement: React.FC = () => {
 
   const handleSelectChange = (e: React.ChangeEvent<{ value: unknown }>, field: keyof User) => {
     const value = e.target.value;
-    if (field === 'status' || field === 'availability') {
+    if (field === 'availability') {
       setForm(prev => ({
         ...prev,
         [field]: value === 'true' || value === true
@@ -156,20 +137,14 @@ const UserManagement: React.FC = () => {
   };
 
   const handleSave = () => {
-    if (!form.epf || !form.employeeName || !form.username || 
-        (editId === null && (!form.password || !form.password_confirmation))) {
+    if (!form.epf || !form.employeeName || !form.username || (editId === null && !form.password)) {
       showSnackbar("Please fill all required fields!", "error");
-      return;
-    }
-
-    if (editId === null && form.password !== form.password_confirmation) {
-      showSnackbar("Password and confirmation do not match!", "error");
       return;
     }
 
     const userData = {
       ...form,
-      status: form.status
+      availability: form.availability
     };
 
     if (editId !== null) {
@@ -189,9 +164,7 @@ const UserManagement: React.FC = () => {
       email: "",
       userType: "",
       availability: false,
-      password: "",
-      password_confirmation: "",
-      status: true
+      password: ""
     });
     setEditId(null);
   };
@@ -201,8 +174,7 @@ const UserManagement: React.FC = () => {
     if (userToEdit) {
       setForm({
         ...userToEdit,
-        password: "",
-        password_confirmation: ""
+        password: ""
       });
       setEditId(id);
     }
@@ -214,108 +186,31 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // Account menu handlers
-  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleAccountMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/userProfile");
-    handleAccountMenuClose();
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    navigate("/login");
-    handleAccountMenuClose();
-  };
-
-  // Notifications menu handlers
-  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationMenuClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const handleViewAllNotifications = () => {
-    navigate("/notifications");
-    handleNotificationMenuClose();
-  };
-
-  const isMutating = createUserMutation.isPending || 
-                     updateUserMutation.isPending || 
-                     deactivateUserMutation.isPending;
+  const isMutating = createUserMutation.isPending ||
+    updateUserMutation.isPending ||
+    deactivateUserMutation.isPending;
 
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
       <Sidebar open={sidebarOpen || hovered} setOpen={setSidebarOpen} />
-      
+
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
-          <Toolbar>
-            <IconButton edge="start" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
-              User Management
-            </Typography>
-
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen}>
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              
-              <Menu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={handleNotificationMenuClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                sx={{ '& .MuiPaper-root': { width: 300, maxHeight: 400 } }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">You have {notificationCount} new notifications</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem><Typography variant="body2">Notification 1</Typography></MenuItem>
-                <MenuItem><Typography variant="body2">Notification 2</Typography></MenuItem>
-                <Divider />
-                <MenuItem onClick={handleViewAllNotifications}>
-                  <Button fullWidth variant="contained" size="small">
-                    View All Notifications
-                  </Button>
-                </MenuItem>
-              </Menu>
-
-              <IconButton onClick={() => document.fullscreenElement ? 
-                document.exitFullscreen() : document.documentElement.requestFullscreen()}>
-                <FullscreenIcon />
-              </IconButton>
-
-              <IconButton onClick={handleAccountMenuOpen}>
-                <AccountCircleIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleAccountMenuClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              >
-                <MenuItem onClick={handleProfileClick}>User Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
+        <AppBar
+          position="static"
+          sx={{
+            bgcolor: 'background.paper',
+            boxShadow: 'none',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            zIndex: theme.zIndex.drawer + 1,
+            color: theme.palette.text.primary
+          }}
+        >
+          <Navbar
+            title="User Management"
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
         </AppBar>
 
         <Stack spacing={3} sx={{ p: 3 }}>
@@ -348,24 +243,14 @@ const UserManagement: React.FC = () => {
                   sx={{ flex: '1 1 calc(9.09% - 16px)' }}
                 />
                 {editId === null && (
-                  <>
-                    <TextField
-                      label="Password*"
-                      name="password"
-                      type="password"
-                      value={form.password}
-                      onChange={handleChange}
-                      sx={{ flex: '1 1 calc(9.09% - 16px)' }}
-                    />
-                    <TextField
-                      label="Confirm Password*"
-                      name="password_confirmation"
-                      type="password"
-                      value={form.password_confirmation}
-                      onChange={handleChange}
-                      sx={{ flex: '1 1 calc(9.09% - 16px)' }}
-                    />
-                  </>
+                  <TextField
+                    label="Password*"
+                    name="password"
+                    type="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    sx={{ flex: '1 1 calc(9.09% - 16px)' }}
+                  />
                 )}
                 <TextField
                   select
@@ -418,20 +303,6 @@ const UserManagement: React.FC = () => {
                   sx={{ flex: '1 1 calc(9.09% - 16px)' }}
                 >
                   {availabilityOptions.map((option) => (
-                    <MenuItem key={option.label} value={option.value.toString()}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  select
-                  label="Status"
-                  name="status"
-                  value={form.status.toString()}
-                  onChange={(e) => handleSelectChange(e, "status")}
-                  sx={{ flex: '1 1 calc(9.09% - 16px)' }}
-                >
-                  {statusOptions.map((option) => (
                     <MenuItem key={option.label} value={option.value.toString()}>
                       {option.label}
                     </MenuItem>

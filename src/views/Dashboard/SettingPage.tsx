@@ -9,83 +9,29 @@ import {
   ListItemText,
   ListItemIcon,
   AppBar,
-  Toolbar,
-  IconButton,
   CssBaseline,
   Paper,
-  useTheme,
-  Button
+  useTheme
 } from "@mui/material";
 import {
-  Menu as MenuIcon,
   Notifications as NotificationsIcon,
   Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
-  Fullscreen as FullscreenIcon,
-  AccountCircle as AccountCircleIcon
+  Brightness7 as LightModeIcon
 } from "@mui/icons-material";
 import Sidebar from "../../components/Sidebar";
 import { useCustomTheme } from "../../context/ThemeContext";
-import { Menu, MenuItem, Badge } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/Navbar";
 
 const SettingsPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const { mode, toggleTheme } = useCustomTheme(); // Updated to use mode and toggleTheme
+  const { mode, toggleTheme } = useCustomTheme(); 
   const theme = useTheme();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationCount] = useState(3);
-  const navigate = useNavigate(); // Navigation hook
 
   const toggleNotifications = () => {
     setNotificationsEnabled(!notificationsEnabled);
     console.log("Notifications:", !notificationsEnabled);
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
-
-  // Account menu handlers
-  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleAccountMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/userProfile");
-    handleAccountMenuClose();
-  };
-
-  const handleLogout = () => {
-    navigate("/login");
-    handleAccountMenuClose();
-  };
-
-  // Notifications menu handlers
-  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationMenuClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const handleViewAllNotifications = () => {
-    navigate("/notifications");
-    handleNotificationMenuClose();
   };
 
   return (
@@ -94,7 +40,6 @@ const SettingsPage = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        
       />
       <Box sx={{
         flexGrow: 1,
@@ -111,99 +56,11 @@ const SettingsPage = () => {
             color: theme.palette.text.primary
           }}
         >
-          <Toolbar>
-            <IconButton
-              edge="start"
-              color="inherit"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              sx={{ mr: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
-
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              sx={{
-                flexGrow: 1,
-                fontWeight: 600
-              }}
-            >
-              Settings
-            </Typography>
-
-            {/* Icons */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {/* Notifications dropdown */}
-              <IconButton onClick={handleNotificationMenuOpen}>
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <Menu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={handleNotificationMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                sx={{
-                  '& .MuiPaper-root': {
-                    width: 300,
-                    maxHeight: 400
-                  }
-                }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">You have {notificationCount} new notifications</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem>
-                  <Typography variant="body2">Notification 1</Typography>
-                </MenuItem>
-                <MenuItem>
-                  <Typography variant="body2">Notification 2</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleViewAllNotifications}>
-                  <Button fullWidth variant="contained" size="small">
-                    View All Notifications
-                  </Button>
-                </MenuItem>
-              </Menu>
-
-              <IconButton onClick={toggleFullscreen}>
-                <FullscreenIcon />
-              </IconButton>
-
-              {/* Account dropdown menu */}
-              <IconButton onClick={handleAccountMenuOpen}>
-                <AccountCircleIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleAccountMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleProfileClick}>User Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
+          <Navbar 
+            title="Settings" 
+            sidebarOpen={sidebarOpen} 
+            setSidebarOpen={setSidebarOpen} 
+          />
         </AppBar>
 
         <Box sx={{ p: 3 }}>

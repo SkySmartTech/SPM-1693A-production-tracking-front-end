@@ -1,22 +1,16 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Button,
   Typography,
   AppBar,
-  Toolbar,
-  IconButton,
   Stack,
   Grid,
   Card,
   CardContent,
-  Divider,
   Snackbar,
   Alert,
   CircularProgress,
-  Menu,
-  MenuItem,
-  Badge,
   CssBaseline,
   useTheme
 } from "@mui/material";
@@ -28,15 +22,11 @@ import Sidebar from "../../../components/Sidebar";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import PrintIcon from "@mui/icons-material/Print";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import MenuIcon from "@mui/icons-material/Menu";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useCustomTheme } from "../../../context/ThemeContext";
+import Navbar from "../../../components/Navbar";
 
 interface ReportData {
   id: number;
@@ -96,15 +86,11 @@ const DayPlanReport = () => {
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationCount] = useState(3);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success" as "success" | "error"
   });
-  const navigate = useNavigate();
   const [paginationModel, setPaginationModel] = useState({
     pageSize: 10,
     page: 0,
@@ -151,51 +137,9 @@ const DayPlanReport = () => {
     }
   };
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
-        .catch(err => console.error('Error attempting to enable fullscreen:', err));
-    } else {
-      document.exitFullscreen()
-        .catch(err => console.error('Error attempting to exit fullscreen:', err));
-    }
-  };
 
   const showSnackbar = (message: string, severity: "success" | "error") => {
     setSnackbar({ open: true, message, severity });
-  };
-
-  // Account menu handlers
-  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleAccountMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/userProfile");
-    handleAccountMenuClose();
-  };
-
-  const handleLogout = () => {
-    navigate("/login");
-    handleAccountMenuClose();
-  };
-
-  // Notifications menu handlers
-  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationMenuClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const handleViewAllNotifications = () => {
-    navigate("/notifications");
-    handleNotificationMenuClose();
   };
 
   const isLoading = isReportsLoading || isMetricsLoading;
@@ -215,87 +159,21 @@ const DayPlanReport = () => {
       {/* Main Content */}
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         {/* AppBar */}
-        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
-          <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <MenuIcon sx={{ color: "black" }} />
-            </IconButton>
-
-            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
-              Summary
-            </Typography>
-
-            {/* Icons */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {/* Notifications dropdown */}
-              <IconButton onClick={handleNotificationMenuOpen}>
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <Menu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={handleNotificationMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                sx={{
-                  '& .MuiPaper-root': {
-                    width: 300,
-                    maxHeight: 400
-                  }
-                }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">You have {notificationCount} new notifications</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem>
-                  <Typography variant="body2">Notification 1</Typography>
-                </MenuItem>
-                <MenuItem>
-                  <Typography variant="body2">Notification 2</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleViewAllNotifications}>
-                  <Button fullWidth variant="contained" size="small">
-                    View All Notifications
-                  </Button>
-                </MenuItem>
-              </Menu>
-
-              <IconButton onClick={toggleFullscreen}>
-                <FullscreenIcon />
-              </IconButton>
-
-              {/* Account dropdown menu */}
-              <IconButton onClick={handleAccountMenuOpen}>
-                <AccountCircleIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleAccountMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleProfileClick}>User Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
+                <AppBar
+          position="static"
+          sx={{
+            bgcolor: 'background.paper',
+            boxShadow: 'none',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            zIndex: theme.zIndex.drawer + 1,
+            color: theme.palette.text.primary
+          }}
+        >
+          <Navbar 
+            title="Summary" 
+            sidebarOpen={sidebarOpen} 
+            setSidebarOpen={setSidebarOpen} 
+          />
         </AppBar>
 
         <Box sx={{ p: 3, flexGrow: 1, overflow: "auto" }}>

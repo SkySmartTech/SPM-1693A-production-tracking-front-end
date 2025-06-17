@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   AppBar,
-  Toolbar,
   Typography,
-  IconButton,
   Box,
   Stack,
   Card,
@@ -11,79 +9,25 @@ import {
   CircularProgress,
   Divider,
   CssBaseline,
-  Button,
   useTheme,
 } from "@mui/material";
-import {
-  Menu as MenuIcon,
-  Notifications as NotificationsIcon,
-  Fullscreen as FullscreenIcon,
-  AccountCircle as AccountCircleIcon,
-} from "@mui/icons-material";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
 import { dashboardInfo } from "../../data/dashboardInfo";
 import { DashboardData, dashboardData as mockData } from "../../data/dashboardData";
-import { Menu, MenuItem, Badge } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import { useCustomTheme } from "../../context/ThemeContext";
+import Navbar from "../../components/Navbar";
 
 const Dashboard = () => {
-  const [, setIsFullscreen] = useState(false);
+  const [] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData[]>([]);
   const [hourlyData, setHourlyData] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationCount] = useState(3);
-  const navigate = useNavigate();
-    const theme = useTheme();
-    useCustomTheme();
+  const theme = useTheme();
+  useCustomTheme();
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      });
-    } else {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
-      });
-    }
-  };
-
-  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleAccountMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/userProfile");
-    handleAccountMenuClose();
-  };
-
-  const handleLogout = () => {
-    navigate("/login");
-    handleAccountMenuClose();
-  };
-
-  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationMenuClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const handleViewAllNotifications = () => {
-    navigate("/notifications");
-    handleNotificationMenuClose();
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -112,94 +56,24 @@ const Dashboard = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        
+
       />
       <Box component="main" sx={{ flexGrow: 1 }}>
-        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper
-
-, boxShadow: 2 }}>
-          <Toolbar>
-            <IconButton
-              edge="start"
-              color="inherit"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              sx={{ color: theme.palette.text.primary }}
-            >
-              <MenuIcon />
-            </IconButton>
-
-            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
-              Dashboard
-            </Typography>
-
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen}>
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <Menu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={handleNotificationMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                sx={{
-                  '& .MuiPaper-root': {
-                    width: 300,
-                    maxHeight: 400
-                  }
-                }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">You have {notificationCount} new notifications</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem>
-                  <Typography variant="body2">Notification 1</Typography>
-                </MenuItem>
-                <MenuItem>
-                  <Typography variant="body2">Notification 2</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleViewAllNotifications}>
-                  <Button fullWidth variant="contained" size="small">
-                    View All Notifications
-                  </Button>
-                </MenuItem>
-              </Menu>
-
-              <IconButton onClick={toggleFullscreen}>
-                <FullscreenIcon />
-              </IconButton>
-
-              <IconButton onClick={handleAccountMenuOpen}>
-                <AccountCircleIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleAccountMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleProfileClick}>User Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
+        <AppBar
+          position="static"
+          sx={{
+            bgcolor: 'background.paper',
+            boxShadow: 'none',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            zIndex: theme.zIndex.drawer + 1,
+            color: theme.palette.text.primary
+          }}
+        >
+          <Navbar
+            title="Dashboard"
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
         </AppBar>
 
         <Box sx={{ p: 2 }}>
@@ -305,7 +179,7 @@ const Dashboard = () => {
                           color: theme.palette.text.primary,
                           p: 1,
                           textAlign: "center",
-                          flex: isLargeBox ? 0.8 : 0.5,
+                          flex: isLargeBox ? 0.5 : 0.5,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",

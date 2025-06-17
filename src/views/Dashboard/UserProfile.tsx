@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   AppBar,
-  Toolbar,
-  IconButton,
   Typography,
   Button,
   Avatar,
@@ -14,27 +12,18 @@ import {
   DialogTitle,
   MenuItem,
   CssBaseline,
-  Divider,
   CircularProgress,
   Snackbar,
   Alert,
-  Badge,
   useTheme
 } from "@mui/material";
-import {
-  Menu as MenuIcon,
-  Notifications as NotificationsIcon,
-  Fullscreen as FullscreenIcon,
-  AccountCircle as AccountCircleIcon,
-  Edit as EditIcon,
-} from "@mui/icons-material";
+import { Edit as EditIcon } from "@mui/icons-material";
 import Sidebar from "../../components/Sidebar";
 import { motion } from "framer-motion";
-import { Menu } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useCustomTheme } from "../../context/ThemeContext";
+import Navbar from "../../components/Navbar";
 
 // Department options
 const departments = ["IT", "HR", "Finance", "Marketing", "Operations"];
@@ -101,10 +90,6 @@ const UserProfile: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationCount] = useState(3);
-  const navigate = useNavigate();
   const [openPhoto, setOpenPhoto] = useState(false);
   const [editUser, setEditUser] = useState<User>(defaultUser);
   const [snackbar, setSnackbar] = useState({
@@ -159,40 +144,6 @@ const UserProfile: React.FC = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  // Account menu handlers
-  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleAccountMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/userProfile");
-    handleAccountMenuClose();
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    navigate("/login");
-    handleAccountMenuClose();
-  };
-
-  // Notifications menu handlers
-  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationMenuClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const handleViewAllNotifications = () => {
-    navigate("/notifications");
-    handleNotificationMenuClose();
-  };
-
   // Handle edit form change
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -240,7 +191,6 @@ const UserProfile: React.FC = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar
@@ -252,89 +202,11 @@ const UserProfile: React.FC = () => {
             color: theme.palette.text.primary
           }}
         >
-          <Toolbar>
-            <IconButton
-              edge="start"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              color="inherit"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              User Profile
-            </Typography>
-
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen} color="inherit">
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <Menu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={handleNotificationMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                sx={{
-                  '& .MuiPaper-root': {
-                    width: 300,
-                    maxHeight: 400
-                  }
-                }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">You have {notificationCount} new notifications</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem>
-                  <Typography variant="body2">Notification 1</Typography>
-                </MenuItem>
-                <MenuItem>
-                  <Typography variant="body2">Notification 2</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleViewAllNotifications}>
-                  <Button fullWidth variant="contained" size="small">
-                    View All Notifications
-                  </Button>
-                </MenuItem>
-              </Menu>
-
-              <IconButton
-                onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
-                color="inherit"
-              >
-                <FullscreenIcon />
-              </IconButton>
-
-              <IconButton onClick={handleAccountMenuOpen} color="inherit">
-                <AccountCircleIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleAccountMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleProfileClick}>User Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
+          <Navbar 
+            title="User Profile" 
+            sidebarOpen={sidebarOpen} 
+            setSidebarOpen={setSidebarOpen} 
+          />
         </AppBar>
 
         {/* Profile Card - Always visible */}

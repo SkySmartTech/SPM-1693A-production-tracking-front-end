@@ -4,36 +4,24 @@ import {
   Typography,
   Button,
   AppBar,
-  Toolbar,
-  IconButton,
   CssBaseline,
-  Menu,
-  MenuItem,
-  Divider,
   useTheme,
   Snackbar,
   Alert,
   CircularProgress
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import MenuIcon from "@mui/icons-material/Menu";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Sidebar from "../../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
-import Badge from '@mui/material/Badge';
 import { useQuery } from "@tanstack/react-query";
 import { useCustomTheme } from "../../../context/ThemeContext";
 import { fetchDayPlans, uploadDayPlanFile, DayPlan } from "../../../api/dayPlanApi";
+import Navbar from "../../../components/Navbar";
 
 const DayPlanUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hovered] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationCount] = useState(3);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -85,7 +73,7 @@ const DayPlanUpload: React.FC = () => {
       });
 
       const result = await uploadDayPlanFile(file);
-      
+
       setSnackbar({
         open: true,
         message: result.message,
@@ -98,7 +86,7 @@ const DayPlanUpload: React.FC = () => {
       }
     } catch (error) {
       let errorMessage = 'An error occurred during upload';
-      
+
       if (error instanceof Error) {
         errorMessage = error.message;
         if (error.message.includes('authentication')) {
@@ -106,7 +94,7 @@ const DayPlanUpload: React.FC = () => {
           return;
         }
       }
-      
+
       setSnackbar({
         open: true,
         message: errorMessage,
@@ -138,8 +126,8 @@ const DayPlanUpload: React.FC = () => {
     ];
 
     const headers = Object.keys(sampleData[0]);
-    const csvRows = sampleData.map(row => 
-      headers.map(fieldName => 
+    const csvRows = sampleData.map(row =>
+      headers.map(fieldName =>
         JSON.stringify(row[fieldName as keyof typeof row])
       ).join(',')
     );
@@ -175,38 +163,7 @@ const DayPlanUpload: React.FC = () => {
     { field: "updated_at", headerName: "Updated At", width: 90 },
   ];
 
-  // Menu handlers (same as before)
-  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
 
-  const handleAccountMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/userProfile");
-    handleAccountMenuClose();
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    navigate("/login");
-    handleAccountMenuClose();
-  };
-
-  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationMenuClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const handleViewAllNotifications = () => {
-    navigate("/notifications");
-    handleNotificationMenuClose();
-  };
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
@@ -218,110 +175,33 @@ const DayPlanUpload: React.FC = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-        
+
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ 
-          bgcolor: theme.palette.background.paper, 
-          boxShadow: 'none',
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          color: theme.palette.text.primary
-        }}>
-          <Toolbar>
-            <IconButton 
-              edge="start" 
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              color="inherit"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Day Plan Upload
-            </Typography>
-
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen} color="inherit">
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <Menu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={handleNotificationMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                sx={{
-                  '& .MuiPaper-root': {
-                    width: 300,
-                    maxHeight: 400
-                  }
-                }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">You have {notificationCount} new notifications</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem>
-                  <Typography variant="body2">Notification 1</Typography>
-                </MenuItem>
-                <MenuItem>
-                  <Typography variant="body2">Notification 2</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleViewAllNotifications}>
-                  <Button fullWidth variant="contained" size="small">
-                    View All Notifications
-                  </Button>
-                </MenuItem>
-              </Menu>
-
-              <IconButton 
-                onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
-                color="inherit"
-              >
-                <FullscreenIcon />
-              </IconButton>
-
-              <IconButton onClick={handleAccountMenuOpen} color="inherit">
-                <AccountCircleIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleAccountMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleProfileClick}>User Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
+        <AppBar
+          position="static"
+          sx={{
+            bgcolor: 'background.paper',
+            boxShadow: 'none',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            zIndex: theme.zIndex.drawer + 1,
+            color: theme.palette.text.primary
+          }}
+        >
+          <Navbar
+            title="Day Plan Upload"
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
         </AppBar>
 
-        <Box sx={{ 
-          padding: 5, 
-          borderRadius: "8px", 
+        <Box sx={{
+          padding: 5,
+          borderRadius: "8px",
           marginBottom: 5,
           bgcolor: theme.palette.background.paper,
           flexGrow: 1
         }}>
-          <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: 5, color: theme.palette.text.primary }}>
-            Day Plan Upload
-          </Typography>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, marginBottom: 5 }}>
             <input
@@ -333,14 +213,14 @@ const DayPlanUpload: React.FC = () => {
               disabled={uploading}
             />
             <label htmlFor="file-input">
-              <Button 
-                variant="contained" 
-                component="span" 
-                sx={{ 
+              <Button
+                variant="contained"
+                component="span"
+                sx={{
                   backgroundColor: theme.palette.mode === 'light' ? "#FFD900" : "#FFC107",
-                  color: "black", 
-                  "&:hover": { 
-                    backgroundColor: theme.palette.mode === 'light' ? "#E6C200" : "#FFA000" 
+                  color: "black",
+                  "&:hover": {
+                    backgroundColor: theme.palette.mode === 'light' ? "#E6C200" : "#FFA000"
                   }
                 }}
                 disabled={uploading}
@@ -352,8 +232,8 @@ const DayPlanUpload: React.FC = () => {
 
             <Box sx={{ flexGrow: 1 }} />
 
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               onClick={handleDownloadSample}
               sx={{ marginRight: 2 }}
               disabled={uploading}
@@ -361,9 +241,9 @@ const DayPlanUpload: React.FC = () => {
               Download Sample
             </Button>
 
-            <Button 
-              variant="contained" 
-              color="primary" 
+            <Button
+              variant="contained"
+              color="primary"
               onClick={handleUpload}
               disabled={!file || uploading}
               endIcon={uploading ? <CircularProgress size={20} color="inherit" /> : null}
@@ -371,28 +251,28 @@ const DayPlanUpload: React.FC = () => {
               {uploading ? 'Uploading...' : 'Upload'}
             </Button>
           </Box>
-          <Box sx={{ 
-            height: 400, 
-            width: "100%",  
-            borderRadius: "8px", 
+          <Box sx={{
+            height: 400,
+            width: "100%",
+            borderRadius: "8px",
             overflowX: "auto",
             bgcolor: theme.palette.background.paper
           }}>
             {isLoading ? (
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
+              <Box sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
                 height: '100%',
                 color: theme.palette.text.primary
               }}>
                 <CircularProgress />
               </Box>
             ) : isError ? (
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
+              <Box sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
                 height: '100%'
               }}>
                 <Typography color="error">Error loading data</Typography>
@@ -423,8 +303,8 @@ const DayPlanUpload: React.FC = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
