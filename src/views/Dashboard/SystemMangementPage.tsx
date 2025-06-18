@@ -83,7 +83,7 @@ const SystemManagement = () => {
   const [checkPoints, setCheckPoints] = useState<any[]>([]);
 
   // Dropdown options
-  const [styleOptions, setStyleOptions] = useState<{ style_no: string }[]>([]);
+  const [styleOptions, setStyleOptions] = useState<{ styleNo: string }[]>([]);
   const [operationOptions, setOperationOptions] = useState<{ operation: string }[]>([]);
 
   // Form states
@@ -554,7 +554,7 @@ const SystemManagement = () => {
               fullWidth
               label="Size Name"
               name="sizeName"
-              value={formData.size_name || ''}
+              value={formData.sizeName || ''}
               onChange={handleFormChange}
               margin="normal"
             />
@@ -574,16 +574,16 @@ const SystemManagement = () => {
             <TextField
               fullWidth
               label="Style No"
-              name="style_no"
-              value={formData.style_no || ''}
+              name="styleNo"
+              value={formData.styleNo || ''}
               onChange={handleFormChange}
               margin="normal"
             />
             <TextField
               fullWidth
               label="Style Description"
-              name="style_description"
-              value={formData.style_description || ''}
+              name="styleDescription"
+              value={formData.styleDescription || ''}
               onChange={handleFormChange}
               margin="normal"
             />
@@ -611,14 +611,14 @@ const SystemManagement = () => {
             <FormControl fullWidth margin="normal">
               <InputLabel>Style No</InputLabel>
               <Select
-                name="style_no"
-                value={formData.style_no || ''}
+                name="styleNo"
+                value={formData.styleNo || ''}
                 label="Style No"
                 onChange={handleSelectChange}
               >
                 {styleOptions.map((option) => (
-                  <MenuItem key={option.style_no} value={option.style_no}>
-                    {option.style_no}
+                  <MenuItem key={option.styleNo} value={option.styleNo}>
+                    {option.styleNo}
                   </MenuItem>
                 ))}
               </Select>
@@ -634,9 +634,8 @@ const SystemManagement = () => {
             <TextField
               fullWidth
               label="Sequence No"
-              name="sequence_no"
-              type="number"
-              value={formData.sequence_no || ''}
+              name="sequenceNo"           
+              value={formData.sequenceNo || ''}
               onChange={handleFormChange}
               margin="normal"
             />
@@ -644,7 +643,6 @@ const SystemManagement = () => {
               fullWidth
               label="SMV"
               name="smv"
-              type="number"
               value={formData.smv || ''}
               onChange={handleFormChange}
               margin="normal"
@@ -665,14 +663,14 @@ const SystemManagement = () => {
             <FormControl fullWidth margin="normal">
               <InputLabel>Style No</InputLabel>
               <Select
-                name="style_no"
-                value={formData.style_no || ''}
+                name="styleNo"
+                value={formData.styleNo || ''}
                 label="Style No"
                 onChange={handleSelectChange}
               >
                 {styleOptions.map((option) => (
-                  <MenuItem key={option.style_no} value={option.style_no}>
-                    {option.style_no}
+                  <MenuItem key={option.styleNo} value={option.styleNo}>
+                    {option.styleNo}
                   </MenuItem>
                 ))}
               </Select>
@@ -695,16 +693,17 @@ const SystemManagement = () => {
             <TextField
               fullWidth
               label="Code No"
-              name="code_no"
-              value={formData.code_no || ''}
+              name="codeNo"
+              type='number'
+              value={formData.codeNo || ''}
               onChange={handleFormChange}
               margin="normal"
             />
             <TextField
               fullWidth
               label="Defect Code"
-              name="defect_code"
-              value={formData.defect_code || ''}
+              name="defectCode"
+              value={formData.defectCode || ''}
               onChange={handleFormChange}
               margin="normal"
             />

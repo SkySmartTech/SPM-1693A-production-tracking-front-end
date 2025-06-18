@@ -19,7 +19,7 @@ interface Size {
 
 interface Style {
   id: number;
-  style_no: string;
+  styleNo: string;
   style_description: string;
   state: string;
   status: string;
@@ -28,7 +28,7 @@ interface Style {
 
 interface Operation {
   id: number;
-  style_no: string;
+  styleNo: string;
   operation: string;
   sequence_no: number;
   smv: number;
@@ -203,7 +203,7 @@ export const updateColor = async (id: number, data: Partial<Color>): Promise<Col
 
 export const updateSize = async (id: number, data: Partial<Size>): Promise<Size> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/api/sizes/${id}`, data, getAuthHeader());
+    const response = await axios.post(`${API_BASE_URL}/api/size/${id}/update`, data, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error updating size:', error);
@@ -213,7 +213,7 @@ export const updateSize = async (id: number, data: Partial<Size>): Promise<Size>
 
 export const updateStyle = async (id: number, data: Partial<Style>): Promise<Style> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/api/styles/${id}`, data, getAuthHeader());
+    const response = await axios.post(`${API_BASE_URL}/api/style/${id}/update`, data, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error updating style:', error);
@@ -223,7 +223,7 @@ export const updateStyle = async (id: number, data: Partial<Style>): Promise<Sty
 
 export const updateOperation = async (id: number, data: Partial<Operation>): Promise<Operation> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/api/operations/${id}`, data, getAuthHeader());
+    const response = await axios.post(`${API_BASE_URL}/api/operation/${id}/update`, data, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error updating operation:', error);
@@ -233,7 +233,7 @@ export const updateOperation = async (id: number, data: Partial<Operation>): Pro
 
 export const updateDefect = async (id: number, data: Partial<Defect>): Promise<Defect> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/api/defects/${id}`, data, getAuthHeader());
+    const response = await axios.post(`${API_BASE_URL}/api/defect/${id}/update`, data, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error updating defect:', error);
@@ -243,7 +243,7 @@ export const updateDefect = async (id: number, data: Partial<Defect>): Promise<D
 
 export const updateCheckPoint = async (id: number, data: Partial<CheckPoint>): Promise<CheckPoint> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/api/check-points/${id}`, data, getAuthHeader());
+    const response = await axios.post(`${API_BASE_URL}/api/check-point/${id}/update`, data, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error updating check point:', error);
@@ -263,7 +263,7 @@ export const deleteColor = async (id: number): Promise<void> => {
 
 export const deleteSize = async (id: number): Promise<void> => {
   try {
-    await axios.delete(`${API_BASE_URL}/api/sizes/${id}`, getAuthHeader());
+    await axios.delete(`${API_BASE_URL}/api/size/${id}/delete`, getAuthHeader());
   } catch (error) {
     console.error('Error deleting size:', error);
     throw error;
@@ -272,7 +272,7 @@ export const deleteSize = async (id: number): Promise<void> => {
 
 export const deleteStyle = async (id: number): Promise<void> => {
   try {
-    await axios.delete(`${API_BASE_URL}/api/styles/${id}`, getAuthHeader());
+    await axios.delete(`${API_BASE_URL}/api/style/${id}/delete`, getAuthHeader());
   } catch (error) {
     console.error('Error deleting style:', error);
     throw error;
@@ -281,7 +281,7 @@ export const deleteStyle = async (id: number): Promise<void> => {
 
 export const deleteOperation = async (id: number): Promise<void> => {
   try {
-    await axios.delete(`${API_BASE_URL}/api/operations/${id}`, getAuthHeader());
+    await axios.delete(`${API_BASE_URL}/api/operation/${id}/delete`, getAuthHeader());
   } catch (error) {
     console.error('Error deleting operation:', error);
     throw error;
@@ -290,7 +290,7 @@ export const deleteOperation = async (id: number): Promise<void> => {
 
 export const deleteDefect = async (id: number): Promise<void> => {
   try {
-    await axios.delete(`${API_BASE_URL}/api/defects/${id}`, getAuthHeader());
+    await axios.delete(`${API_BASE_URL}/api/defect/${id}/delete`, getAuthHeader());
   } catch (error) {
     console.error('Error deleting defect:', error);
     throw error;
@@ -299,7 +299,7 @@ export const deleteDefect = async (id: number): Promise<void> => {
 
 export const deleteCheckPoint = async (id: number): Promise<void> => {
   try {
-    await axios.delete(`${API_BASE_URL}/api/check-points/${id}`, getAuthHeader());
+    await axios.delete(`${API_BASE_URL}/api/check-point/${id}/delete`, getAuthHeader());
   } catch (error) {
     console.error('Error deleting check point:', error);
     throw error;
@@ -307,10 +307,10 @@ export const deleteCheckPoint = async (id: number): Promise<void> => {
 };
 
 // Fetch dropdown options
-export const fetchStyleOptions = async (): Promise<{ style_no: string }[]> => {
+export const fetchStyleOptions = async (): Promise<{ styleNo: string }[]> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/api/all-styles`, getAuthHeader());
-    return response.data.map((style: Style) => ({ style_no: style.style_no })) || [];
+    return response.data.map((style: Style) => ({ styleNo: style.styleNo })) || [];
   } catch (error) {
     console.error('Error fetching style options:', error);
     throw error;
