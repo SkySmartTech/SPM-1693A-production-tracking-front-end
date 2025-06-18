@@ -51,7 +51,6 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
                   "Email",
                   "User Type",
                   "Availability",
-                  "Status",
                   "Actions"
                 ].map((header) => (
                   <TableCell key={header} sx={{ fontWeight: "bold" }}>
@@ -73,7 +72,6 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.userType}</TableCell>
                     <TableCell>{user.availability ? "Available" : "Unavailable"}</TableCell>
-                    <TableCell>{user.status ? "Active" : "Inactive"}</TableCell>
                     <TableCell>
                       <IconButton onClick={() => handleEdit(user.id!)} color="primary">
                         <EditIcon />

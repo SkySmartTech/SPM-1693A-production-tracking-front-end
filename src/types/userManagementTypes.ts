@@ -9,8 +9,6 @@ export interface User {
   userType: string;
   availability: boolean;
   password: string;
-  password_confirmation: string;
-  status: boolean;
 }
 
 export const departments = ["IT", "HR", "Finance", "Marketing", "Operations"] as const;

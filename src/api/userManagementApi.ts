@@ -13,7 +13,7 @@ export const fetchUsers = async (): Promise<User[]> => {
 };
 
 export const createUser = async (userData: User): Promise<User> => {
-  const response = await axios.post(`${API_BASE_URL}/api/user-register`, userData, {
+  const response = await axios.post(`${API_BASE_URL}/api/user-create`, userData, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem('authToken')}`
     }
@@ -22,7 +22,7 @@ export const createUser = async (userData: User): Promise<User> => {
 };
 
 export const updateUser = async (id: number, userData: User): Promise<User> => {
-  const response = await axios.post(`${API_BASE_URL}/api/user/${id}`, userData, {
+  const response = await axios.post(`${API_BASE_URL}/api/user/${id}/update`, userData, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem('authToken')}`
     }
@@ -31,7 +31,7 @@ export const updateUser = async (id: number, userData: User): Promise<User> => {
 };
 
 export const deactivateUser = async (id: number): Promise<void> => {
-  await axios.patch(`${API_BASE_URL}/api/all-users/${id}/deactivate`, {}, {
+  await axios.patch(`${API_BASE_URL}/api/user/${id}/availability-update`, {}, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem('authToken')}`
     }
