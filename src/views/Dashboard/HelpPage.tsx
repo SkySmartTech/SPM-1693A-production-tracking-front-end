@@ -10,13 +10,10 @@ import {
   TextField,
   Typography,
   AppBar,
-  Toolbar,
-  IconButton,
-  Grid,
   Paper,
   CssBaseline,
-  Divider,
   useTheme,
+  Stack,
 } from "@mui/material";
 import {
   Search,
@@ -25,60 +22,21 @@ import {
   Update,
   Settings,
   HelpOutline,
-  Lock,
-  Menu as MenuIcon,
-  Notifications as NotificationsIcon,
-  Fullscreen as FullscreenIcon,
-  AccountCircle as AccountCircleIcon
+  Lock
 } from "@mui/icons-material";
 import Sidebar from "../../components/Sidebar";
-import { Menu, MenuItem, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useCustomTheme } from "../../context/ThemeContext";
+import Navbar from "../../components/Navbar";
 
 const HelpPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationCount] = useState(3);
   const theme = useTheme();
   useCustomTheme();
 
-  // Account menu handlers
-  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleAccountMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/userProfile");
-    handleAccountMenuClose();
-  };
-
-  const handleLogout = () => {
-    navigate("/login");
-    handleAccountMenuClose();
-  };
-
-  // Notifications menu handlers
-  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationMenuClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const handleViewAllNotifications = () => {
-    navigate("/notifications");
-    handleNotificationMenuClose();
-  };
 
   // Help topics with navigation routes
   const helpTopics = [
@@ -100,112 +58,35 @@ const HelpPage = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-       
+
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar 
-          position="static" 
-          sx={{ 
-            bgcolor: theme.palette.background.paper,
+        <AppBar
+          position="static"
+          sx={{
+            bgcolor: 'background.paper',
             boxShadow: 'none',
             borderBottom: `1px solid ${theme.palette.divider}`,
+            zIndex: theme.zIndex.drawer + 1,
             color: theme.palette.text.primary
           }}
         >
-          <Toolbar>
-            <IconButton 
-              edge="start" 
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              color="inherit"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Help
-            </Typography>
-
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen} color="inherit">
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <Menu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={handleNotificationMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                sx={{
-                  '& .MuiPaper-root': {
-                    width: 300,
-                    maxHeight: 400
-                  }
-                }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">You have {notificationCount} new notifications</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem>
-                  <Typography variant="body2">Notification 1</Typography>
-                </MenuItem>
-                <MenuItem>
-                  <Typography variant="body2">Notification 2</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleViewAllNotifications}>
-                  <Button fullWidth variant="contained" size="small">
-                    View All Notifications
-                  </Button>
-                </MenuItem>
-              </Menu>
-
-              <IconButton 
-                onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
-                color="inherit"
-              >
-                <FullscreenIcon />
-              </IconButton>
-
-              <IconButton onClick={handleAccountMenuOpen} color="inherit">
-                <AccountCircleIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleAccountMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleProfileClick}>User Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
+          <Navbar
+            title="Help"
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
         </AppBar>
 
         {/* Search Box */}
-        <Box sx={{ 
-          textAlign: "center", 
-          height: "200px", 
-          bgcolor: theme.palette.background.paper, 
-          p: 4, 
-          borderRadius: 5, 
-          mb: 3, 
-          mt: 4 
+        <Box sx={{
+          textAlign: "center",
+          height: "200px",
+          bgcolor: theme.palette.background.paper,
+          p: 4,
+          borderRadius: 5,
+          mb: 3,
+          mt: 4
         }}>
           <Typography variant="h6" fontWeight="bold" mb={2} color="text.primary">
             How can we help you?
@@ -235,19 +116,19 @@ const HelpPage = () => {
 
         {/* Search Results */}
         {searchTerm && filteredItems.length > 0 && (
-          <Box sx={{ 
-            bgcolor: theme.palette.background.paper, 
-            p: 2, 
-            borderRadius: 2, 
-            mb: 2 
+          <Box sx={{
+            bgcolor: theme.palette.background.paper,
+            p: 2,
+            borderRadius: 2,
+            mb: 2
           }}>
             <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
               Search Results:
             </Typography>
             <List>
               {filteredItems.map((item, index) => (
-                <ListItemButton 
-                  key={index} 
+                <ListItemButton
+                  key={index}
                   onClick={() => console.log("Navigate to", item)}
                   sx={{
                     '&:hover': {
@@ -255,8 +136,8 @@ const HelpPage = () => {
                     }
                   }}
                 >
-                  <ListItemText 
-                    primary={item} 
+                  <ListItemText
+                    primary={item}
                     primaryTypographyProps={{ color: 'text.primary' }}
                   />
                 </ListItemButton>
@@ -266,17 +147,28 @@ const HelpPage = () => {
         )}
 
         {/* Help Topics - Now horizontal */}
-        <Box sx={{ 
-          bgcolor: theme.palette.background.paper, 
-          p: 3, 
-          borderRadius: 2 
+        <Box sx={{
+          bgcolor: theme.palette.background.paper,
+          p: 3,
+          borderRadius: 2
         }}>
           <Typography variant="h6" fontWeight="bold" mb={2} color="text.primary">
             Help Topics
           </Typography>
-          <Grid container spacing={2}>
+          <Stack
+            direction="row"
+            spacing={2}
+            flexWrap="wrap"
+            useFlexGap
+          >
             {helpTopics.map((topic, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+              <Box
+                key={index}
+                sx={{
+                  width: { xs: '100%', sm: '48%', md: '31%' }, // Mimic Grid: 12, 6, 4
+                  mb: 2,
+                }}
+              >
                 <Paper
                   elevation={2}
                   sx={{
@@ -284,8 +176,8 @@ const HelpPage = () => {
                     borderRadius: 2,
                     cursor: "pointer",
                     bgcolor: theme.palette.background.default,
-                    "&:hover": { 
-                      bgcolor: theme.palette.action.hover 
+                    "&:hover": {
+                      bgcolor: theme.palette.action.hover
                     }
                   }}
                   onClick={() => navigate(topic.route)}
@@ -299,9 +191,9 @@ const HelpPage = () => {
                     </Typography>
                   </Box>
                 </Paper>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Stack>
         </Box>
       </Box>
     </Box>

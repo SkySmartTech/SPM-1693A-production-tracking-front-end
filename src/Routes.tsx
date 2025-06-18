@@ -3,7 +3,6 @@ import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import MainLayout from "./components/Layout/MainLayout";
 import PageLoader from "./components/PageLoader";
 import { useCurrentUser } from "./hooks/useCurrentUser";
-import UserRoleManagement from "./views/Dashboard/UserRoleManagement/UserRoleManagement";
 import UserAccessManagement from "./views/Dashboard/UserAccessManagement/UserAccessManagement";
 
 
@@ -78,7 +77,6 @@ function AppRoutes() {
         <Route path="/dayReport" element={<DayPlanReport />} />
         <Route path="/daySummary" element={<DayPlanSummary />} />
         <Route path="/userManagement" element={<UserManagement />} />
-        <Route path="/userRoleManagement" element={<UserRoleManagement />} />
         <Route path="/userAccessManagement" element={<UserAccessManagement/>} />
 
       </Route>

@@ -2,9 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   AppBar,
-  Toolbar,
   Typography,
-  IconButton,
   Box,
   Card,
   CircularProgress,
@@ -28,19 +26,14 @@ import {
   Stack
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
-  Notifications as NotificationsIcon,
-  Fullscreen as FullscreenIcon,
-  AccountCircle as AccountCircleIcon,
   Person,
   Style as StyleIcon,
   AssignmentTurnedIn
 } from '@mui/icons-material';
 import { Delete } from '@mui/icons-material';
-import { useNavigate } from "react-router-dom";
 import { useCustomTheme } from "../../context/ThemeContext";
 import Sidebar from "../../components/Sidebar";
-import { Menu, MenuItem, Badge } from "@mui/material";
+import { MenuItem } from "@mui/material";
 import {
   Production,
   fetchColorData,
@@ -49,6 +42,7 @@ import {
 } from '../../api/productionApi';
 import { Controller, useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
+import Navbar from '../../components/Navbar';
 
 interface ProductionData {
   buyer: string;
@@ -110,10 +104,6 @@ const ProductionUpdatePage = () => {
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [notificationCount] = useState(3);
-  const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>({
     teamNo: '',
     style: '',
@@ -268,48 +258,6 @@ const ProductionUpdatePage = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error('Error attempting to enable fullscreen:', err);
-      });
-    } else {
-      document.exitFullscreen().catch(err => {
-        console.error('Error attempting to exit fullscreen:', err);
-      });
-    }
-  };
-
-  const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleAccountMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/userProfile");
-    handleAccountMenuClose();
-  };
-
-  const handleLogout = () => {
-    navigate("/login");
-    handleAccountMenuClose();
-  };
-
-  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationMenuClose = () => {
-    setNotificationAnchorEl(null);
-  };
-
-  const handleViewAllNotifications = () => {
-    navigate("/notifications");
-    handleNotificationMenuClose();
-  };
 
   const {
     register,
@@ -353,86 +301,22 @@ const ProductionUpdatePage = () => {
         setOpen={setSidebarOpen}
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <AppBar position="static" sx={{ bgcolor: theme.palette.background.paper, boxShadow: 2 }}>
-          <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <MenuIcon sx={{ color: 'black' }} />
-            </IconButton>
-
-            <Typography variant="h6" sx={{ flexGrow: 1, color: theme.palette.text.primary }}>
-              Production Update
-            </Typography>
-
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <IconButton onClick={handleNotificationMenuOpen}>
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <Menu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={handleNotificationMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                sx={{
-                  '& .MuiPaper-root': {
-                    width: 300,
-                    maxHeight: 400
-                  }
-                }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">You have {notificationCount} new notifications</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem>
-                  <Typography variant="body2">Notification 1</Typography>
-                </MenuItem>
-                <MenuItem>
-                  <Typography variant="body2">Notification 2</Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleViewAllNotifications}>
-                  <Button fullWidth variant="contained" size="small">
-                    View All Notifications
-                  </Button>
-                </MenuItem>
-              </Menu>
-
-              <IconButton onClick={toggleFullscreen}>
-                <FullscreenIcon />
-              </IconButton>
-
-              <IconButton onClick={handleAccountMenuOpen}>
-                <AccountCircleIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleAccountMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleProfileClick}>User Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
+        <AppBar
+          position="static"
+          sx={{
+            bgcolor: 'background.paper',
+            boxShadow: 'none',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            zIndex: theme.zIndex.drawer + 1,
+            color: theme.palette.text.primary
+          }}
+        >
+          <Navbar
+            title="Production Update"
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
         </AppBar>
-
         <Box sx={{ p: 3, flexGrow: 1, overflow: "auto" }}>
           {loading.options ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
@@ -589,7 +473,8 @@ const ProductionUpdatePage = () => {
                   <CircularProgress size={40} />
                 </Box>
               ) : (
-                <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                <Stack direction="row" spacing={2} sx={{ mb: 3 }}
+                >
                   {[
                     {
                       title: 'Success',
