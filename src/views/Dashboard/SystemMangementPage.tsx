@@ -50,7 +50,9 @@ import {
   deleteDefect,
   deleteCheckPoint,
   fetchStyleOptions,
-  fetchOperationOptions
+  fetchOperationOptions,
+  createColor, createSize, createStyle, createOperation, createDefect, createCheckPoint,
+  updateColor, updateSize, updateStyle, updateOperation, updateDefect, updateCheckPoint,
 } from '../../api/systemManagementApi';
 import Navbar from '../../components/Navbar';
 
@@ -209,22 +211,46 @@ const SystemManagement = () => {
       if (editId) {
         // Update existing item
         switch (activeTab) {
-          case 0: break;
-          case 1: break;
-          case 2: break;
-          case 3: break;
-          case 4: break;
-          case 5: break;
+          case 0:
+            await updateColor(editId, formData);
+            break;
+          case 1:
+            await updateSize(editId, formData);
+            break;
+          case 2:
+            await updateStyle(editId, formData);
+            break;
+          case 3:
+            await updateOperation(editId, formData);
+            break;
+          case 4:
+            await updateDefect(editId, formData);
+            break;
+          case 5:
+            await updateCheckPoint(editId, formData);
+            break;
         }
       } else {
         // Create new item
         switch (activeTab) {
-          case 0: break;
-          case 1: break;
-          case 2: break;
-          case 3: break;
-          case 4: break;
-          case 5: break;
+          case 0:
+            await createColor(formData);
+            break;
+          case 1:
+            await createSize(formData);
+            break;
+          case 2:
+            await createStyle(formData);
+            break;
+          case 3:
+            await createOperation(formData);
+            break;
+          case 4:
+            await createDefect(formData);
+            break;
+          case 5:
+            await createCheckPoint(formData);
+            break;
         }
       }
 
@@ -279,11 +305,14 @@ const SystemManagement = () => {
                   <TableRow key={color.id}>
                     <TableCell>{color.id}</TableCell>
                     <TableCell>{color.color}</TableCell>
-                    <TableCell>{color.color_code}</TableCell>
+                    <TableCell>{color.colorCode}</TableCell>
                     <TableCell>{color.updated_at}</TableCell>
                     <TableCell>{color.created_at}</TableCell>
                     <TableCell>
-                      <IconButton onClick={() => handleEditClick(color)}>
+                      <IconButton onClick={() => handleEditClick({
+                        ...color,
+                        colorCode: color.colorCode // ensure correct field
+                      })}>
                         <EditIcon color="primary" />
                       </IconButton>
                       <IconButton onClick={() => handleDeleteClick(color.id)}>
@@ -314,7 +343,7 @@ const SystemManagement = () => {
                 {sizes.map((size) => (
                   <TableRow key={size.id}>
                     <TableCell>{size.id}</TableCell>
-                    <TableCell>{size.size_name}</TableCell>
+                    <TableCell>{size.sizeName}</TableCell>
                     <TableCell>{size.description}</TableCell>
                     <TableCell>{size.updated_at}</TableCell>
                     <TableCell>{size.created_at}</TableCell>
@@ -351,8 +380,8 @@ const SystemManagement = () => {
                 {styles.map((style) => (
                   <TableRow key={style.id}>
                     <TableCell>{style.id}</TableCell>
-                    <TableCell>{style.style_no}</TableCell>
-                    <TableCell>{style.style_description}</TableCell>
+                    <TableCell>{style.styleNo}</TableCell>
+                    <TableCell>{style.styleDescription}</TableCell>
                     <TableCell>{style.state}</TableCell>
                     <TableCell>{style.status}</TableCell>
                     <TableCell>{style.created_at}</TableCell>
@@ -391,9 +420,9 @@ const SystemManagement = () => {
                 {operations.map((operation) => (
                   <TableRow key={operation.id}>
                     <TableCell>{operation.id}</TableCell>
-                    <TableCell>{operation.style_no}</TableCell>
+                    <TableCell>{operation.styleNo}</TableCell>
                     <TableCell>{operation.operation}</TableCell>
-                    <TableCell>{operation.sequence_no}</TableCell>
+                    <TableCell>{operation.sequenceNo}</TableCell>
                     <TableCell>{operation.smv}</TableCell>
                     <TableCell>{operation.status}</TableCell>
                     <TableCell>{operation.created_at}</TableCell>
@@ -432,10 +461,10 @@ const SystemManagement = () => {
                 {defects.map((defect) => (
                   <TableRow key={defect.id}>
                     <TableCell>{defect.id}</TableCell>
-                    <TableCell>{defect.style_no}</TableCell>
+                    <TableCell>{defect.styleNo}</TableCell>
                     <TableCell>{defect.operation}</TableCell>
-                    <TableCell>{defect.code_no}</TableCell>
-                    <TableCell>{defect.defect_code}</TableCell>
+                    <TableCell>{defect.codeNo}</TableCell>
+                    <TableCell>{defect.defectCode}</TableCell>
                     <TableCell>{defect.status}</TableCell>
                     <TableCell>{defect.created_at}</TableCell>
                     <TableCell>
@@ -511,8 +540,8 @@ const SystemManagement = () => {
             <TextField
               fullWidth
               label="Color Code"
-              name="color_code"
-              value={formData.color_code || ''}
+              name="colorCode"
+              value={formData.colorCode || ''}
               onChange={handleFormChange}
               margin="normal"
             />
@@ -524,7 +553,7 @@ const SystemManagement = () => {
             <TextField
               fullWidth
               label="Size Name"
-              name="size_name"
+              name="sizeName"
               value={formData.size_name || ''}
               onChange={handleFormChange}
               margin="normal"

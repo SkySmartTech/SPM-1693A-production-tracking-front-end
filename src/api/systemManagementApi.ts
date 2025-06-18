@@ -193,7 +193,7 @@ export const createCheckPoint = async (data: Omit<CheckPoint, 'id' | 'created_at
 // Update items
 export const updateColor = async (id: number, data: Partial<Color>): Promise<Color> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/api/colors/${id}`, data, getAuthHeader());
+    const response = await axios.post(`${API_BASE_URL}/api/color/${id}/update`, data, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error updating color:', error);
@@ -254,7 +254,7 @@ export const updateCheckPoint = async (id: number, data: Partial<CheckPoint>): P
 // Delete items
 export const deleteColor = async (id: number): Promise<void> => {
   try {
-    await axios.delete(`${API_BASE_URL}/api/colors/${id}`, getAuthHeader());
+    await axios.delete(`${API_BASE_URL}/api/color/${id}/delete`, getAuthHeader());
   } catch (error) {
     console.error('Error deleting color:', error);
     throw error;
