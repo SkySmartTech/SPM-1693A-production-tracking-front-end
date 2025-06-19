@@ -73,6 +73,7 @@ const SystemManagement = () => {
     message: '',
     severity: 'success' as 'success' | 'error'
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Data states
   const [colors, setColors] = useState<any[]>([]);
@@ -150,7 +151,7 @@ const SystemManagement = () => {
       }
     };
 
-    if (activeTab === 3 || activeTab === 4) { // Operations or Defects tab
+    if (activeTab === 3 || activeTab === 4) {
       fetchDropdowns();
     }
   }, [activeTab]);
@@ -165,12 +166,14 @@ const SystemManagement = () => {
 
   const handleAddClick = () => {
     setFormData({});
+    setFieldErrors({});
     setEditId(null);
     setOpenForm(true);
   };
 
   const handleEditClick = (item: any) => {
     setFormData(item);
+    setFieldErrors({});
     setEditId(item.id);
     setOpenForm(true);
   };
@@ -208,49 +211,27 @@ const SystemManagement = () => {
   const handleFormSubmit = async () => {
     try {
       setLoading(prev => ({ ...prev, form: true }));
+      setFieldErrors({});
+      
       if (editId) {
         // Update existing item
         switch (activeTab) {
-          case 0:
-            await updateColor(editId, formData);
-            break;
-          case 1:
-            await updateSize(editId, formData);
-            break;
-          case 2:
-            await updateStyle(editId, formData);
-            break;
-          case 3:
-            await updateOperation(editId, formData);
-            break;
-          case 4:
-            await updateDefect(editId, formData);
-            break;
-          case 5:
-            await updateCheckPoint(editId, formData);
-            break;
+          case 0: await updateColor(editId, formData); break;
+          case 1: await updateSize(editId, formData); break;
+          case 2: await updateStyle(editId, formData); break;
+          case 3: await updateOperation(editId, formData); break;
+          case 4: await updateDefect(editId, formData); break;
+          case 5: await updateCheckPoint(editId, formData); break;
         }
       } else {
         // Create new item
         switch (activeTab) {
-          case 0:
-            await createColor(formData);
-            break;
-          case 1:
-            await createSize(formData);
-            break;
-          case 2:
-            await createStyle(formData);
-            break;
-          case 3:
-            await createOperation(formData);
-            break;
-          case 4:
-            await createDefect(formData);
-            break;
-          case 5:
-            await createCheckPoint(formData);
-            break;
+          case 0: await createColor(formData); break;
+          case 1: await createSize(formData); break;
+          case 2: await createStyle(formData); break;
+          case 3: await createOperation(formData); break;
+          case 4: await createDefect(formData); break;
+          case 5: await createCheckPoint(formData); break;
         }
       }
 
@@ -266,9 +247,20 @@ const SystemManagement = () => {
         case 4: setDefects(await fetchDefects()); break;
         case 5: setCheckPoints(await fetchCheckPoints()); break;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving data:', error);
-      showSnackbar(`Failed to ${editId ? 'update' : 'add'} item`, 'error');
+      
+      if (error.response && error.response.data) {
+        if (error.response.data.errors) {
+          // Field-specific errors
+          setFieldErrors(error.response.data.errors);
+        } else if (error.response.data.message) {
+          // General error message
+          showSnackbar(error.response.data.message, 'error');
+        }
+      } else {
+        showSnackbar(`Failed to ${editId ? 'update' : 'add'} item`, 'error');
+      }
     } finally {
       setLoading(prev => ({ ...prev, form: false }));
     }
@@ -277,11 +269,29 @@ const SystemManagement = () => {
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    
+    // Clear error when user types
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleSelectChange = (e: SelectChangeEvent<string>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    
+    // Clear error when user selects
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const renderTable = () => {
@@ -311,7 +321,7 @@ const SystemManagement = () => {
                     <TableCell>
                       <IconButton onClick={() => handleEditClick({
                         ...color,
-                        colorCode: color.colorCode // ensure correct field
+                        colorCode: color.colorCode
                       })}>
                         <EditIcon color="primary" />
                       </IconButton>
@@ -536,6 +546,8 @@ const SystemManagement = () => {
               value={formData.color || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.color}
+              helperText={fieldErrors.color}
             />
             <TextField
               fullWidth
@@ -544,6 +556,8 @@ const SystemManagement = () => {
               value={formData.colorCode || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.colorCode}
+              helperText={fieldErrors.colorCode}
             />
           </>
         );
@@ -557,6 +571,8 @@ const SystemManagement = () => {
               value={formData.sizeName || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.sizeName}
+              helperText={fieldErrors.sizeName}
             />
             <TextField
               fullWidth
@@ -565,6 +581,8 @@ const SystemManagement = () => {
               value={formData.description || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.description}
+              helperText={fieldErrors.description}
             />
           </>
         );
@@ -578,6 +596,8 @@ const SystemManagement = () => {
               value={formData.styleNo || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.styleNo}
+              helperText={fieldErrors.styleNo}
             />
             <TextField
               fullWidth
@@ -586,6 +606,8 @@ const SystemManagement = () => {
               value={formData.styleDescription || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.styleDescription}
+              helperText={fieldErrors.styleDescription}
             />
             <TextField
               fullWidth
@@ -594,6 +616,8 @@ const SystemManagement = () => {
               value={formData.state || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.state}
+              helperText={fieldErrors.state}
             />
             <TextField
               fullWidth
@@ -602,13 +626,15 @@ const SystemManagement = () => {
               value={formData.status || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.status}
+              helperText={fieldErrors.status}
             />
           </>
         );
       case 3: // Operations
         return (
           <>
-            <FormControl fullWidth margin="normal">
+            <FormControl fullWidth margin="normal" error={!!fieldErrors.styleNo}>
               <InputLabel>Style No</InputLabel>
               <Select
                 name="styleNo"
@@ -622,6 +648,11 @@ const SystemManagement = () => {
                   </MenuItem>
                 ))}
               </Select>
+              {fieldErrors.styleNo && (
+                <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 1 }}>
+                  {fieldErrors.styleNo}
+                </Box>
+              )}
             </FormControl>
             <TextField
               fullWidth
@@ -630,22 +661,29 @@ const SystemManagement = () => {
               value={formData.operation || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.operation}
+              helperText={fieldErrors.operation}
             />
             <TextField
               fullWidth
               label="Sequence No"
-              name="sequenceNo"           
+              name="sequenceNo"          
               value={formData.sequenceNo || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.sequenceNo}
+              helperText={fieldErrors.sequenceNo}
             />
             <TextField
               fullWidth
               label="SMV"
               name="smv"
+              type='number'  
               value={formData.smv || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.smv}
+              helperText={fieldErrors.smv}
             />
             <TextField
               fullWidth
@@ -654,13 +692,15 @@ const SystemManagement = () => {
               value={formData.status || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.status}
+              helperText={fieldErrors.status}
             />
           </>
         );
       case 4: // Defects
         return (
           <>
-            <FormControl fullWidth margin="normal">
+            <FormControl fullWidth margin="normal" error={!!fieldErrors.styleNo}>
               <InputLabel>Style No</InputLabel>
               <Select
                 name="styleNo"
@@ -674,8 +714,13 @@ const SystemManagement = () => {
                   </MenuItem>
                 ))}
               </Select>
+              {fieldErrors.styleNo && (
+                <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 1 }}>
+                  {fieldErrors.styleNo}
+                </Box>
+              )}
             </FormControl>
-            <FormControl fullWidth margin="normal">
+            <FormControl fullWidth margin="normal" error={!!fieldErrors.operation}>
               <InputLabel>Operation</InputLabel>
               <Select
                 name="operation"
@@ -689,6 +734,11 @@ const SystemManagement = () => {
                   </MenuItem>
                 ))}
               </Select>
+              {fieldErrors.operation && (
+                <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 1 }}>
+                  {fieldErrors.operation}
+                </Box>
+              )}
             </FormControl>
             <TextField
               fullWidth
@@ -698,6 +748,8 @@ const SystemManagement = () => {
               value={formData.codeNo || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.codeNo}
+              helperText={fieldErrors.codeNo}
             />
             <TextField
               fullWidth
@@ -706,6 +758,8 @@ const SystemManagement = () => {
               value={formData.defectCode || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.defectCode}
+              helperText={fieldErrors.defectCode}
             />
             <TextField
               fullWidth
@@ -714,6 +768,8 @@ const SystemManagement = () => {
               value={formData.status || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.status}
+              helperText={fieldErrors.status}
             />
           </>
         );
@@ -727,6 +783,8 @@ const SystemManagement = () => {
               value={formData.name || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.name}
+              helperText={fieldErrors.name}
             />
             <TextField
               fullWidth
@@ -735,6 +793,8 @@ const SystemManagement = () => {
               value={formData.description || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.description}
+              helperText={fieldErrors.description}
             />
             <TextField
               fullWidth
@@ -743,6 +803,8 @@ const SystemManagement = () => {
               value={formData.status || ''}
               onChange={handleFormChange}
               margin="normal"
+              error={!!fieldErrors.status}
+              helperText={fieldErrors.status}
             />
           </>
         );
@@ -757,7 +819,6 @@ const SystemManagement = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-
       />
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <AppBar
@@ -777,7 +838,6 @@ const SystemManagement = () => {
           />
         </AppBar>
         <Box sx={{ p: 3, flexGrow: 1, overflow: "auto" }}>
-          {/* Add Tabs navigation */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
             <Tabs value={activeTab} onChange={handleTabChange} aria-label="system management tabs">
               <Tab label="Colors" />
