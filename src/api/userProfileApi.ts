@@ -62,19 +62,14 @@ export const fetchUserProfile = async (): Promise<User> => {
   }
 };
 
-export const updateUserProfile = async (userId: string, userData: UserProfileUpdateData): Promise<void> => {
+export const updateUserProfile = async (userData: UserProfileUpdateData & { id: string }): Promise<void> => {
   try {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
+    // No need to get or check token
     await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/user/${userId}/profile`, 
+      `${import.meta.env.VITE_API_BASE_URL}/api/user/${userData.id}/profile-update`, 
       userData,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       }
