@@ -40,7 +40,6 @@ const Login = () => {
               position: "absolute",
               top: 20,
               left: 20,
-              backgroundColor: "white",
               padding: "8px 16px",
               borderRadius: "10px",
               fontWeight: "bold",

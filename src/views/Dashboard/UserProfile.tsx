@@ -90,7 +90,7 @@ const UserProfile: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
-  const [openPhoto, setOpenPhoto] = useState(false);
+  const [, setOpenPhoto] = useState(false);
   const [editUser, setEditUser] = useState<User>(defaultUser);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -170,18 +170,21 @@ const UserProfile: React.FC = () => {
   // Save updated user info
   const handleSaveEdit = async () => {
     if (!validateForm()) return;
-    updateProfileMutation.mutate(editUser);
+    
+    // Create a copy of editUser without the photo property
+    const { photo, ...userData } = editUser;
+    updateProfileMutation.mutate(userData);
   };
 
-  // Handle photo upload
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const formData = new FormData();
-      formData.append("photo", file);
-      uploadPhotoMutation.mutate(formData);
-    }
-  };
+  // // Handle photo upload
+  // const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files && e.target.files[0]) {
+  //     const file = e.target.files[0];
+  //     const formData = new FormData();
+  //     formData.append("photo", file);
+  //     uploadPhotoMutation.mutate(formData);
+  //   }
+  // };
 
   const isMutating = updateProfileMutation.isPending || uploadPhotoMutation.isPending;
 
@@ -202,10 +205,10 @@ const UserProfile: React.FC = () => {
             color: theme.palette.text.primary
           }}
         >
-          <Navbar 
-            title="User Profile" 
-            sidebarOpen={sidebarOpen} 
-            setSidebarOpen={setSidebarOpen} 
+          <Navbar
+            title="User Profile"
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
           />
         </AppBar>
 
@@ -263,7 +266,11 @@ const UserProfile: React.FC = () => {
         </motion.div>
 
         {/* Edit User Dialog */}
-        <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
+        <Dialog
+          open={openEdit}
+          onClose={() => setOpenEdit(false)}
+          sx={{ '& .MuiDialog-paper': { width: '90%', maxWidth: 600 } }}
+        >
           <DialogTitle>Edit User Info</DialogTitle>
           <DialogContent>
             <TextField
@@ -272,7 +279,7 @@ const UserProfile: React.FC = () => {
               name="name"
               value={editUser.name}
               onChange={handleEditChange}
-              sx={{ mb: 2 }}
+              sx={{ mt: 3, mb: 2 }}
             />
             <TextField
               fullWidth
@@ -307,7 +314,11 @@ const UserProfile: React.FC = () => {
               onChange={handleEditChange}
               sx={{ mb: 2 }}
             >
-              {departments.map((dept) => <MenuItem key={dept} value={dept}>{dept}</MenuItem>)}
+              {departments.map((dept) => (
+                <MenuItem key={dept} value={dept}>
+                  {dept}
+                </MenuItem>
+              ))}
             </TextField>
           </DialogContent>
           <DialogActions>
@@ -318,12 +329,12 @@ const UserProfile: React.FC = () => {
               disabled={isMutating}
               startIcon={isMutating ? <CircularProgress size={20} color="inherit" /> : null}
             >
-              {isMutating ? "Saving..." : "Save"}
+              {isMutating ? 'Saving...' : 'Save'}
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* Photo Upload Dialog */}
+        {/* Photo Upload Dialog
         <Dialog open={openPhoto} onClose={() => setOpenPhoto(false)}>
           <DialogTitle>Upload New Photo</DialogTitle>
           <DialogContent>
@@ -337,7 +348,7 @@ const UserProfile: React.FC = () => {
           <DialogActions>
             <Button onClick={() => setOpenPhoto(false)}>Cancel</Button>
           </DialogActions>
-        </Dialog>
+        </Dialog> */}
       </Box>
 
       <Snackbar
