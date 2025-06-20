@@ -21,13 +21,9 @@ import { Edit as EditIcon } from "@mui/icons-material";
 import Sidebar from "../../components/Sidebar";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import { useCustomTheme } from "../../context/ThemeContext";
 import Navbar from "../../components/Navbar";
-import {
-  fetchUserProfile,
-  updateUserProfile,
-  uploadUserPhoto
-} from "../../api/userProfileApi";
 
 // Department options
 const departments = ["IT", "HR", "Finance", "Marketing", "Operations"];
@@ -52,6 +48,42 @@ const defaultUser: User = {
   department: "",
   contact: "",
   photo: "",
+};
+
+const fetchUserProfile = async (): Promise<User> => {
+  const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
+
+  return {
+    name: response.data.employeeName || "",
+    username: response.data.username || "",
+    password: "********",
+    email: response.data.email || "",
+    id: response.data.epf || "",
+    department: response.data.department || "",
+    contact: response.data.contact || "",
+    photo: response.data.photo || ""
+  };
+};
+
+const updateUserProfile = async (user: Partial<User>): Promise<void> => {
+  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/${user.id}/profile-update`, user, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
+};
+
+const uploadUserPhoto = async (formData: FormData): Promise<void> => {
+  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/photo`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
 };
 
 const UserProfile: React.FC = () => {
@@ -84,10 +116,7 @@ const UserProfile: React.FC = () => {
 
   // Update profile mutation
   const updateProfileMutation = useMutation<void, Error, Partial<User>>({
-    mutationFn: async (user) => {
-      const { id, ...userData } = user;
-      await updateUserProfile({ ...userData, id: id! });
-    },
+    mutationFn: updateUserProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       setOpenEdit(false);
@@ -100,10 +129,7 @@ const UserProfile: React.FC = () => {
 
   // Upload photo mutation
   const uploadPhotoMutation = useMutation<void, Error, FormData>({
-    mutationFn: async (formData) => {
-      if (!editUser.id) throw new Error("User ID is required");
-      await uploadUserPhoto(editUser.id, formData.get("photo") as File);
-    },
+    mutationFn: uploadUserPhoto,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       setOpenPhoto(false);
@@ -149,6 +175,16 @@ const UserProfile: React.FC = () => {
     const { photo, ...userData } = editUser;
     updateProfileMutation.mutate(userData);
   };
+
+  // // Handle photo upload
+  // const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files && e.target.files[0]) {
+  //     const file = e.target.files[0];
+  //     const formData = new FormData();
+  //     formData.append("photo", file);
+  //     uploadPhotoMutation.mutate(formData);
+  //   }
+  // };
 
   const isMutating = updateProfileMutation.isPending || uploadPhotoMutation.isPending;
 
