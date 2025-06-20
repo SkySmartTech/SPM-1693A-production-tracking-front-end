@@ -498,9 +498,7 @@ const SystemManagement = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Status</TableCell>
+                  <TableCell>Check Point Name</TableCell>
                   <TableCell>Created At</TableCell>
                   <TableCell>Updated At</TableCell>
                   <TableCell>Actions</TableCell>
@@ -510,9 +508,7 @@ const SystemManagement = () => {
                 {checkPoints.map((checkPoint) => (
                   <TableRow key={checkPoint.id}>
                     <TableCell>{checkPoint.id}</TableCell>
-                    <TableCell>{checkPoint.name}</TableCell>
-                    <TableCell>{checkPoint.description}</TableCell>
-                    <TableCell>{checkPoint.status}</TableCell>
+                    <TableCell>{checkPoint.checkPointName}</TableCell>
                     <TableCell>{checkPoint.created_at}</TableCell>
                     <TableCell>{checkPoint.updated_at}</TableCell>
                     <TableCell>
@@ -779,32 +775,12 @@ const SystemManagement = () => {
             <TextField
               fullWidth
               label="Name"
-              name="name"
-              value={formData.name || ''}
+              name="checkPointName"
+              value={formData.checkPointName || ''}
               onChange={handleFormChange}
               margin="normal"
-              error={!!fieldErrors.name}
-              helperText={fieldErrors.name}
-            />
-            <TextField
-              fullWidth
-              label="Description"
-              name="description"
-              value={formData.description || ''}
-              onChange={handleFormChange}
-              margin="normal"
-              error={!!fieldErrors.description}
-              helperText={fieldErrors.description}
-            />
-            <TextField
-              fullWidth
-              label="Status"
-              name="status"
-              value={formData.status || ''}
-              onChange={handleFormChange}
-              margin="normal"
-              error={!!fieldErrors.status}
-              helperText={fieldErrors.status}
+              error={!!fieldErrors.checkPointName}
+              helperText={fieldErrors.checkPointName}
             />
           </>
         );
