@@ -6,9 +6,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel
+  DialogActions
 } from "@mui/material";
 import Sidebar from "../../../components/Sidebar";
 import { useCustomTheme } from "../../../context/ThemeContext";
@@ -65,7 +63,7 @@ const UserAccessManagementSystem = () => {
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [roleDescription, setRoleDescription] = useState<string>("");
-  const [userType, setUserType] = useState<string>("");
+  const [, setUserType] = useState<string>("");
   // Initialize permissions with defaultPermissions
   const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>(defaultPermissions);
   const [loading, setLoading] = useState(false);
@@ -314,14 +312,6 @@ const UserAccessManagementSystem = () => {
                 sx={{ mt: 3 }}
                 disabled={loading}
               />
-
-              <TextField
-                fullWidth
-                label="User Type"
-                value={userType}
-                sx={{ mt: 2 }}
-                disabled
-              />
             </Paper>
 
             <Paper elevation={3} sx={{ p: 3 }}>
@@ -369,21 +359,6 @@ const UserAccessManagementSystem = () => {
                 onChange={(e) => setNewRoleForm((prev: any) => ({ ...prev, name: e.target.value }))}
                 disabled={loading}
               />
-              <FormControl fullWidth>
-                <InputLabel>User Type</InputLabel>
-                <Select
-                  value={newRoleForm.userType}
-                  onChange={(e) => setNewRoleForm((prev: any) => ({ ...prev, userType: e.target.value }))}
-                  label="User Type"
-                  disabled={loading}
-                >
-                  {userTypes.map((type) => (
-                    <MenuItem key={type.id} value={type.userType}>
-                      {type.userType}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
             </Box>
           </DialogContent>
           <DialogActions>

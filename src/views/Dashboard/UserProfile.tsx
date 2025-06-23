@@ -21,81 +21,52 @@ import { Edit as EditIcon } from "@mui/icons-material";
 import Sidebar from "../../components/Sidebar";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { useCustomTheme } from "../../context/ThemeContext";
 import Navbar from "../../components/Navbar";
+import { fetchUserProfile, updateUserProfile, uploadUserPhoto } from "../../api/userProfileApi";
 
 // Department options
 const departments = ["IT", "HR", "Finance", "Marketing", "Operations"];
 
 interface User {
-  name: string;
+  employeeName: string;
   username: string;
   password: string;
   email: string;
-  id: string;
+  epf: string;
   department: string;
   contact: string;
   photo: string;
 }
 
 const defaultUser: User = {
-  name: "",
+  employeeName: "",
   username: "",
   password: "********",
   email: "",
-  id: "",
+  epf: "",
   department: "",
   contact: "",
   photo: "",
-};
-
-const fetchUserProfile = async (): Promise<User> => {
-  const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user`, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`
-    }
-  });
-
-  return {
-    name: response.data.employeeName || "",
-    username: response.data.username || "",
-    password: "********",
-    email: response.data.email || "",
-    id: response.data.epf || "",
-    department: response.data.department || "",
-    contact: response.data.contact || "",
-    photo: response.data.photo || ""
-  };
-};
-
-const updateUserProfile = async (user: Partial<User>): Promise<void> => {
-  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/${user.id}/profile-update`, user, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`
-    }
-  });
-};
-
-const uploadUserPhoto = async (formData: FormData): Promise<void> => {
-  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/photo`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`
-    }
-  });
 };
 
 const UserProfile: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
-  const [, setOpenPhoto] = useState(false);
+  const [openPhoto, setOpenPhoto] = useState(false);
   const [editUser, setEditUser] = useState<User>(defaultUser);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success" as "success" | "error",
+  });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({
+    employeeName: '',
+    username: '',
+    email: '',
+    contact: '',
+    department: ''
   });
   const theme = useTheme();
   useCustomTheme();
@@ -122,8 +93,8 @@ const UserProfile: React.FC = () => {
       setOpenEdit(false);
       showSnackbar("Profile updated successfully!", "success");
     },
-    onError: () => {
-      showSnackbar("Failed to update profile", "error");
+    onError: (error: any) => {
+      showSnackbar(error.response?.data?.message || "Failed to update profile", "error");
     }
   });
 
@@ -135,8 +106,8 @@ const UserProfile: React.FC = () => {
       setOpenPhoto(false);
       showSnackbar("Photo uploaded successfully!", "success");
     },
-    onError: () => {
-      showSnackbar("Failed to upload photo", "error");
+    onError: (error: any) => {
+      showSnackbar(error.response?.data?.message || "Failed to upload photo", "error");
     }
   });
 
@@ -144,47 +115,85 @@ const UserProfile: React.FC = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  // Handle edit form change
+  // Validate individual field
+  const validateField = (name: string, value: string) => {
+    let error = '';
+    
+    switch (name) {
+      case 'employeeName':
+        if (!value.trim()) error = 'Employee name is required';
+        else if (value.length > 100) error = 'Name too long (max 100 chars)';
+        break;
+      case 'username':
+        if (!value.trim()) error = 'Username is required';
+        else if (!/^[a-zA-Z0-9_]+$/.test(value)) error = 'Only letters, numbers and underscore allowed';
+        else if (value.length < 3) error = 'Username too short (min 3 chars)';
+        else if (value.length > 30) error = 'Username too long (max 30 chars)';
+        break;
+      case 'email':
+        if (!value.trim()) error = 'Email is required';
+        else if (!/^\S+@\S+\.\S+$/.test(value)) error = 'Invalid email format';
+        else if (value.length > 255) error = 'Email too long';
+        break;
+      case 'contact':
+        if (!value.trim()) error = 'Contact number is required';
+        else if (!/^\+?[0-9]{10,15}$/.test(value)) error = 'Invalid phone number (10-15 digits)';
+        break;
+      case 'department':
+        if (!value.trim()) error = 'Department is required';
+        break;
+    }
+
+    setValidationErrors(prev => ({ ...prev, [name]: error }));
+    return !error;
+  };
+
+  // Handle edit form change with validation
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setEditUser({ ...editUser, [name]: value });
+    validateField(name, value);
   };
 
-  // Validate form inputs
-  const validateForm = () => {
-    if (!/^[a-zA-Z0-9]+$/.test(editUser.username)) {
-      showSnackbar("Username should not contain symbols!", "error");
-      return false;
-    }
-    if (!/^\+?[0-9]+$/.test(editUser.contact)) {
-      showSnackbar("Contact number must contain only numbers!", "error");
-      return false;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(editUser.email)) {
-      showSnackbar("Please enter a valid email address", "error");
-      return false;
-    }
-    return true;
-  };
-
-  // Save updated user info
-  const handleSaveEdit = async () => {
-    if (!validateForm()) return;
+  // Validate all fields before submission
+  const validateAllFields = () => {
+    let isValid = true;
+    const fieldsToValidate = ['employeeName', 'username', 'email', 'contact', 'department'];
     
-    // Create a copy of editUser without the photo property
-    const { photo, ...userData } = editUser;
-    updateProfileMutation.mutate(userData);
+    fieldsToValidate.forEach(field => {
+      if (!validateField(field, editUser[field as keyof User] as string)) {
+        isValid = false;
+      }
+    });
+
+    return isValid;
   };
 
-  // // Handle photo upload
-  // const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (e.target.files && e.target.files[0]) {
-  //     const file = e.target.files[0];
-  //     const formData = new FormData();
-  //     formData.append("photo", file);
-  //     uploadPhotoMutation.mutate(formData);
-  //   }
-  // };
+  // Handle photo upload
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append("photo", file);
+      uploadPhotoMutation.mutate(formData);
+    }
+  };
+
+  // Save updated user info with validation
+  const handleSaveEdit = async () => {
+    if (!validateAllFields()) {
+      showSnackbar("Please fix all validation errors", "error");
+      return;
+    }
+
+    try {
+      // Create a copy of editUser without the photo property
+      const { photo, ...userData } = editUser;
+      await updateProfileMutation.mutateAsync(userData);
+    } catch (error) {
+      console.error("Update error:", error);
+    }
+  };
 
   const isMutating = updateProfileMutation.isPending || uploadPhotoMutation.isPending;
 
@@ -241,11 +250,11 @@ const UserProfile: React.FC = () => {
             {/* User Info - Always shows labels even if values are empty */}
             <Typography variant="h6" sx={{ mb: 2 }}>User Info</Typography>
             <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-              <Typography><b>Name:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.name || "-"}</Typography>
+              <Typography><b>Name:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.employeeName || "-"}</Typography>
               <Typography><b>Username:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.username || "-"}</Typography>
               <Typography><b>Password:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.password.replace(/./g, "*")}</Typography>
               <Typography><b>Email:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.email || "-"}</Typography>
-              <Typography><b>ID:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.id || "-"}</Typography>
+              <Typography><b>ID:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.epf || "-"}</Typography>
               <Typography><b>Department:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.department || "-"}</Typography>
               <Typography><b>Contact:</b> {isDataLoading ? <CircularProgress size={16} /> : user?.contact || "-"}</Typography>
             </Box>
@@ -276,10 +285,13 @@ const UserProfile: React.FC = () => {
             <TextField
               fullWidth
               label="Name"
-              name="name"
-              value={editUser.name}
+              name="employeeName"
+              value={editUser.employeeName}
               onChange={handleEditChange}
+              error={!!validationErrors.employeeName}
+              helperText={validationErrors.employeeName}
               sx={{ mt: 3, mb: 2 }}
+              required
             />
             <TextField
               fullWidth
@@ -287,7 +299,10 @@ const UserProfile: React.FC = () => {
               name="username"
               value={editUser.username}
               onChange={handleEditChange}
+              error={!!validationErrors.username}
+              helperText={validationErrors.username}
               sx={{ mb: 2 }}
+              required
             />
             <TextField
               fullWidth
@@ -295,7 +310,10 @@ const UserProfile: React.FC = () => {
               name="email"
               value={editUser.email}
               onChange={handleEditChange}
+              error={!!validationErrors.email}
+              helperText={validationErrors.email}
               sx={{ mb: 2 }}
+              required
             />
             <TextField
               fullWidth
@@ -303,7 +321,10 @@ const UserProfile: React.FC = () => {
               name="contact"
               value={editUser.contact}
               onChange={handleEditChange}
+              error={!!validationErrors.contact}
+              helperText={validationErrors.contact}
               sx={{ mb: 2 }}
+              required
             />
             <TextField
               select
@@ -312,7 +333,10 @@ const UserProfile: React.FC = () => {
               name="department"
               value={editUser.department}
               onChange={handleEditChange}
+              error={!!validationErrors.department}
+              helperText={validationErrors.department}
               sx={{ mb: 2 }}
+              required
             >
               {departments.map((dept) => (
                 <MenuItem key={dept} value={dept}>
@@ -334,7 +358,7 @@ const UserProfile: React.FC = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Photo Upload Dialog
+        {/* Photo Upload Dialog */}
         <Dialog open={openPhoto} onClose={() => setOpenPhoto(false)}>
           <DialogTitle>Upload New Photo</DialogTitle>
           <DialogContent>
@@ -348,7 +372,7 @@ const UserProfile: React.FC = () => {
           <DialogActions>
             <Button onClick={() => setOpenPhoto(false)}>Cancel</Button>
           </DialogActions>
-        </Dialog> */}
+        </Dialog>
       </Box>
 
       <Snackbar

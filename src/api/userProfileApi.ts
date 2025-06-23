@@ -1,117 +1,49 @@
+// userProfileApi.ts
 import axios from "axios";
 
 interface User {
-  name: string;
+  employeeName: string;
   username: string;
   password: string;
   email: string;
-  id: string;
+  epf: string;
   department: string;
   contact: string;
   photo: string;
 }
 
-interface UserProfileUpdateData {
-  name?: string;
-  username?: string;
-  email?: string;
-  department?: string;
-  contact?: string;
-}
-
 export const fetchUserProfile = async (): Promise<User> => {
-  try {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('No authentication token found');
+  const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
     }
+  });
 
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}/api/user`, 
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        }
-      }
-    );
-
-    if (!response.data) {
-      throw new Error('No data received from server');
-    }
-
-    const data = response.data;
-
-    return {
-      name: data.employeeName || data.name || "",
-      username: data.username || "",
-      password: "********", // Masked for security
-      email: data.email || "",
-      id: data.epf || data.id || "",
-      department: data.department || "",
-      contact: data.contact || "",
-      photo: data.photo || ""
-    };
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to fetch user profile'
-    );
-  }
+  return {
+    employeeName: response.data.employeeName || "",
+    username: response.data.username || "",
+    password: "********",
+    email: response.data.email || "",
+    epf: response.data.epf || "",
+    department: response.data.department || "",
+    contact: response.data.contact || "",
+    photo: response.data.photo || ""
+  };
 };
 
-export const updateUserProfile = async (userData: UserProfileUpdateData & { id: string }): Promise<void> => {
-  try {
-    // No need to get or check token
-    await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/user/${userData.id}/profile-update`, 
-      userData,
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to update user profile'
-    );
-  }
+export const updateUserProfile = async (user: Partial<User>): Promise<void> => {
+  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/${user.epf}/profile-update`, user, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
 };
 
-export const uploadUserPhoto = async (userId: string, file: File): Promise<string> => {
-  try {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('No authentication token found');
+export const uploadUserPhoto = async (formData: FormData): Promise<void> => {
+  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/photo`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
     }
-
-    const formData = new FormData();
-    formData.append('photo', file);
-
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/user/${userId}/photo`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    return response.data.photoUrl || response.data.photo;
-  } catch (error) {
-    console.error('Error uploading user photo:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to upload photo'
-    );
-  }
+  });
 };
