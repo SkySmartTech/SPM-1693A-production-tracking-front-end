@@ -33,6 +33,10 @@ export async function fetchSizeData() {
   return res.data;
 }
 
+export async function fetchCheckPointData() {
+  const res = await axios.get("/api/all-check-points"); 
+  return res.data;
+}
 
 
 

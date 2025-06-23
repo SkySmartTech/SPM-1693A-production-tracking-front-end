@@ -13,20 +13,17 @@ import { useCustomTheme } from "../../../context/ThemeContext";
 import Navbar from "../../../components/Navbar";
 import { useTheme } from "@mui/material/styles";
 import {
-  fetchUserTypes,
   fetchUserRoles,
   createUserRole,
   updateUserRole,
   deleteUserRole,
-  createUserAccess,
   UserRole,
-  UserType,
   PermissionKey
 } from "../../../api/userAccessmanagementApi";
 
 // Create a type-safe default permissions object
 const defaultPermissions: Record<PermissionKey, boolean> = {
-  adminDashboard: false,
+  homeDashboard: false,
   userManagement: false,
   roleManagement: false,
   systemSettings: false,
@@ -58,13 +55,10 @@ const defaultPermissions: Record<PermissionKey, boolean> = {
 };
 
 const UserAccessManagementSystem = () => {
-  const [userTypes, setUserTypes] = useState<UserType[]>([]);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [roleDescription, setRoleDescription] = useState<string>("");
-  const [, setUserType] = useState<string>("");
-  // Initialize permissions with defaultPermissions
   const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>(defaultPermissions);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,19 +72,17 @@ const UserAccessManagementSystem = () => {
     severity: "success" as "success" | "error"
   });
 
-  // Define the type for the new role form
   type NewRoleForm = {
-    name: string;
     userType: string;
+    description: string;
   };
 
   const [newRoleDialog, setNewRoleDialog] = useState(false);
   const [newRoleForm, setNewRoleForm] = useState<NewRoleForm>({
-    name: '',
-    userType: ''
+    userType: '',
+    description: '',
   });
 
-  // Add error handling for data loading
   useEffect(() => {
     loadData();
   }, []);
@@ -99,40 +91,28 @@ const UserAccessManagementSystem = () => {
     setLoading(true);
     setError(null);
     try {
-      const [types, fetchedRoles] = await Promise.all([
-        fetchUserTypes(),
-        fetchUserRoles()
-      ]);
-
-      setUserTypes(types || []);
+      const fetchedRoles = await fetchUserRoles();
       setRoles(fetchedRoles || []);
-      
       if (fetchedRoles && fetchedRoles.length > 0) {
         const firstRole = fetchedRoles[0];
-        setSelectedRole(firstRole.name);
+        setSelectedRole(String(firstRole.userType));
         setSelectedRoleId(firstRole.id);
         setRoleDescription(firstRole.description);
-        setUserType(firstRole.userType);
-        // Ensure permissions are never undefined
         setPermissions(firstRole.permissionObject || defaultPermissions);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while loading data';
-      setError(errorMessage);
-      showSnackbar(errorMessage, "error");
+      setError('An error occurred while loading data');
+      showSnackbar('An error occurred while loading data', "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Update the permissions handling in the role change effect
   useEffect(() => {
-    const role = roles.find(r => r.name === selectedRole);
+    const role = roles.find(r => r.userType === selectedRole);
     if (role) {
       setSelectedRoleId(role.id);
       setRoleDescription(role.description);
-      setUserType(role.userType);
-      // Ensure permissions are never undefined
       setPermissions(role.permissionObject || defaultPermissions);
     }
   }, [selectedRole, roles]);
@@ -151,7 +131,6 @@ const UserAccessManagementSystem = () => {
 
   const handleUpdate = async () => {
     if (!selectedRoleId) return;
-    
     setLoading(true);
     try {
       await updateUserRole(selectedRoleId, {
@@ -160,7 +139,7 @@ const UserAccessManagementSystem = () => {
       });
       await loadData();
       showSnackbar("Role updated successfully!", "success");
-    } catch (error) {
+    } catch {
       showSnackbar("Failed to update role", "error");
     } finally {
       setLoading(false);
@@ -168,36 +147,27 @@ const UserAccessManagementSystem = () => {
   };
 
   const handleNew = () => {
-    setNewRoleForm({ name: '', userType: '' });
+    setNewRoleForm({ userType: '', description: '' });
     setNewRoleDialog(true);
   };
 
   const handleCreateRole = async () => {
-    if (!newRoleForm.name || !newRoleForm.userType) {
+    if (!newRoleForm.userType || !newRoleForm.description) {
       showSnackbar("Please fill all fields", "error");
       return;
     }
-
     setLoading(true);
     try {
       const newRole = await createUserRole({
-        name: newRoleForm.name,
         userType: newRoleForm.userType,
-        description: "",
+        description: newRoleForm.description,
         permissionObject: defaultPermissions
       });
-      
-      await createUserAccess({
-        userType: newRoleForm.userType,
-        description: "",
-        permissionObject: defaultPermissions
-      });
-      
       await loadData();
-      setSelectedRole(newRole.name);
+      setSelectedRole(String(newRole.userType));
       showSnackbar("New role created successfully!", "success");
       setNewRoleDialog(false);
-    } catch (error) {
+    } catch {
       showSnackbar("Failed to create role", "error");
     } finally {
       setLoading(false);
@@ -206,20 +176,18 @@ const UserAccessManagementSystem = () => {
 
   const handleDelete = async () => {
     if (!selectedRoleId || !window.confirm("Are you sure you want to delete this role?")) return;
-    
     setLoading(true);
     try {
       await deleteUserRole(selectedRoleId);
       await loadData();
       showSnackbar("Role deleted successfully!", "success");
-    } catch (error) {
+    } catch {
       showSnackbar("Failed to delete role", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Update the renderPermissionSection to handle undefined permissions safely
   const renderPermissionSection = (title: string, keys: PermissionKey[]) => (
     <Grid item xs={12} md={4}>
       <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>{title}</Typography>
@@ -241,7 +209,6 @@ const UserAccessManagementSystem = () => {
     </Grid>
   );
 
-  // Add error display to the UI
   return (
     <Box sx={{ display: "flex", width: "100vw", minHeight: "100vh" }}>
       <CssBaseline />
@@ -275,7 +242,7 @@ const UserAccessManagementSystem = () => {
                   value={selectedRole} 
                   onChange={handleRoleChange} 
                   sx={{ minWidth: 200 }}
-                  disabled={loading || userTypes.length === 0}
+                  disabled={loading || roles.length === 0}
                 >
                   {roles.map(role => (
                     <MenuItem key={role.id} value={role.userType}>{role.userType}</MenuItem>
@@ -318,7 +285,7 @@ const UserAccessManagementSystem = () => {
               <Typography variant="h5" sx={{ mb: 3 }}>Role Permissions</Typography>
               <Grid container spacing={3}>
                 {renderPermissionSection("Admin Panel Access", [
-                  "adminDashboard", "userManagement", "roleManagement", "systemSettings",
+                  "homeDashboard", "userManagement", "roleManagement", "systemSettings",
                   "auditLogs", "backupRestore", "apiManagement", "reportGeneration", "dataExport", "systemMonitoring"
                 ])}
                 {renderPermissionSection("Home Dashboard Access", [
@@ -355,9 +322,18 @@ const UserAccessManagementSystem = () => {
               <TextField
                 fullWidth
                 label="Role Name"
-                value={newRoleForm.name}
-                onChange={(e) => setNewRoleForm((prev: any) => ({ ...prev, name: e.target.value }))}
+                value={newRoleForm.userType}
+                onChange={(e) => setNewRoleForm((prev: any) => ({ ...prev, userType: e.target.value }))}
                 disabled={loading}
+              />
+              <TextField
+                fullWidth
+                label="Description"
+                value={newRoleForm.description}
+                onChange={(e) => setNewRoleForm((prev: any) => ({ ...prev, description: e.target.value }))}
+                disabled={loading}
+                multiline
+                minRows={2}
               />
             </Box>
           </DialogContent>

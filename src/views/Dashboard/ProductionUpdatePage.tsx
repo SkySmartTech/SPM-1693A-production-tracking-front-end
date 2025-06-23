@@ -1,4 +1,3 @@
-// src/pages/ProductionUpdate/ProductionUpdatePage.tsx
 import { useState, useEffect } from 'react';
 import {
   AppBar,
@@ -38,7 +37,8 @@ import {
   Production,
   fetchColorData,
   fetchStyleData,
-  fetchSizeData
+  fetchSizeData,
+  fetchCheckPointData
 } from '../../api/productionApi';
 import { Controller, useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
@@ -74,6 +74,8 @@ interface ColorOption {
 }
 
 interface StyleOption {
+  checkPointName: any;
+  styleDescription: any;
   description: string;
   style_no: string;
 }
@@ -287,12 +289,11 @@ const ProductionUpdatePage = () => {
     queryKey: ["sizes"],
     queryFn: fetchSizeData,
   });
-
-  useQuery<StyleOption[]>({
+    const { data: checkPointData } = useQuery<StyleOption[]>({
     queryKey: ["checkPoints"],
-    queryFn: fetchSizeData,
+    queryFn: fetchCheckPointData,
   });
-
+  
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
@@ -404,7 +405,7 @@ const ProductionUpdatePage = () => {
                       {...field}
                       onChange={(_event, newValue) => field.onChange(newValue)}
                       size="small"
-                      options={styleData?.map(style => style.style_no) || []}
+                      options={styleData?.map(style => style.styleDescription) || []}
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
@@ -450,7 +451,7 @@ const ProductionUpdatePage = () => {
                       {...field}
                       onChange={(_event, newValue) => field.onChange(newValue)}
                       size="small"
-                      options={sizeData?.map(checkPoint => checkPoint.description) || []}
+                      options={checkPointData?.map(cp => cp.checkPointName) || []} // <-- Use correct property
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
