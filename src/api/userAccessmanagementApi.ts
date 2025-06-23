@@ -33,7 +33,7 @@ export interface UserRole {
   id: string;
   name: string;
   description: string;
-  permissionObject: Record<PermissionKey, boolean>;
+  permissionObject: PermissionKey[]; // <-- change from Record<PermissionKey, boolean> to PermissionKey[]
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -62,10 +62,9 @@ export const fetchUserRoles = async (): Promise<UserRole[]> => {
 export const createUserRole = async (roleData: {
   userType: string;
   description: string;
-  permissionObject: Record<PermissionKey, boolean>;
+  permissionObject: PermissionKey[]; // <-- change here
 }): Promise<UserRole> => {
   try {
-    // Add userType as required by backend
     const payload = {
       ...roleData,
       userType: roleData.userType
@@ -82,10 +81,10 @@ export const createUserRole = async (roleData: {
 };
 
 // Update role
-export const updateUserRole = async (id: string, roleData: Partial<UserRole>): Promise<UserRole> => {
+export const updateUserRole = async (id: string, roleData: Partial<Omit<UserRole, 'id'>>): Promise<UserRole> => {
   try {
-    const response = await axios.put(
-      `${API_BASE_URL}/api/user-role/${id}/update`,
+    const response = await axios.post(
+      `${API_BASE_URL}/api/user-access/${id}/update`,
       roleData,
       getAuthHeader()
     );

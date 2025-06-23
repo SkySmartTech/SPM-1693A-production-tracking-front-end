@@ -79,6 +79,16 @@ const UserAccessManagementSystem = () => {
     loadData();
   }, []);
 
+  const arrayToPermissionsObject = (arr: string[] | undefined): Record<PermissionKey, boolean> => {
+    const obj = { ...defaultPermissions };
+    if (Array.isArray(arr)) {
+      arr.forEach(key => {
+        if (key in obj) obj[key as PermissionKey] = true;
+      });
+    }
+    return obj;
+  };
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
@@ -90,7 +100,7 @@ const UserAccessManagementSystem = () => {
         setSelectedRole(String(firstRole.userType));
         setSelectedRoleId(firstRole.id);
         setRoleDescription(firstRole.description);
-        setPermissions(firstRole.permissionObject || defaultPermissions);
+        setPermissions(arrayToPermissionsObject(firstRole.permissionObject));
       }
     } catch (err) {
       setError('An error occurred while loading data');
@@ -105,7 +115,7 @@ const UserAccessManagementSystem = () => {
     if (role) {
       setSelectedRoleId(role.id);
       setRoleDescription(role.description);
-      setPermissions(role.permissionObject || defaultPermissions);
+      setPermissions(arrayToPermissionsObject(role.permissionObject));
     }
   }, [selectedRole, roles]);
 
@@ -134,13 +144,19 @@ const UserAccessManagementSystem = () => {
     setSelectedRole(e.target.value);
   };
 
+  const getSelectedPermissions = () =>
+    Object.entries(permissions)
+      .filter(([_, value]) => value)
+      .map(([key]) => key as PermissionKey);
+
   const handleUpdate = async () => {
-    if (!selectedRoleId) return;
+    if (!selectedRoleId || !selectedRole) return;
     setLoading(true);
     try {
       await updateUserRole(selectedRoleId, {
+        userType: selectedRole, // <-- ensure this is sent
         description: roleDescription,
-        permissionObject: permissions
+        permissionObject: getSelectedPermissions(),
       });
       await loadData();
       showSnackbar("Role updated successfully!", "success");
@@ -164,9 +180,9 @@ const UserAccessManagementSystem = () => {
     setLoading(true);
     try {
       const newRole = await createUserRole({
-        userType: newRoleForm.userType,
+        userType: newRoleForm.userType, // <-- ensure this is sent
         description: newRoleForm.description,
-        permissionObject: defaultPermissions
+        permissionObject: getSelectedPermissions(),
       });
       await loadData();
       setSelectedRole(String(newRole.userType));
