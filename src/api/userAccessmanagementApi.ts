@@ -1,9 +1,32 @@
 import axios from "axios";
 
-export type PermissionKey =
-  | "homeDashboard" | "userManagement" | "roleManagement" | "systemSettings" | "auditLogs" | "backupRestore" | "apiManagement" | "reportGeneration" | "dataExport" | "systemMonitoring"
-  | "managerDashboard" | "workOrderManagement" | "teamManagement" | "performanceReports" | "inventoryView" | "maintenanceScheduling" | "costAnalysis" | "kpiMonitoring" | "documentManagement" | "approvalWorkflows"
-  | "partsCatalog" | "orderManagement" | "deliveryTracking" | "invoiceSubmission" | "inventoryManagement" | "contractView" | "serviceRequests" | "complianceDocuments" | "performanceMetrics";
+// Updated PermissionKey type to match the new structure from the image
+export type PermissionKey = 
+  // Admin Panel
+  | "homeDashboard"
+  
+  // P2P Section
+  | "p2pSection"
+  | "productionDashboard"
+  | "productionUpdate"
+  | "dayPlanUpload"
+  | "dayPlanReports"
+  | "dayPlanSummary"
+  
+  // User Management
+  | "userManagement"
+  | "userAccount"
+  | "userManagementSub"
+  | "userAccessManagement"
+  
+  // System Management
+  | "systemManagement"
+  
+  // User Profile
+  | "userProfile"
+  
+  // Other Settings
+  | "autoRefresh";
 
 export interface UserRole {
   userType: string | number | readonly string[] | undefined;

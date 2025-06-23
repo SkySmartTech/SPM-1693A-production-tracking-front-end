@@ -1,13 +1,9 @@
 import { useState, useEffect } from "react";
 import {
   Box, Button, Checkbox, CircularProgress, FormControlLabel,
-  FormGroup, MenuItem, Select, Typography, SelectChangeEvent,
+  MenuItem, Select, Typography, SelectChangeEvent,
   AppBar, Snackbar, Alert, Paper, CssBaseline, TextField, Grid,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
-} from "@mui/material";
+  Dialog, DialogTitle, DialogContent, DialogActions} from "@mui/material";
 import Sidebar from "../../../components/Sidebar";
 import { useCustomTheme } from "../../../context/ThemeContext";
 import Navbar from "../../../components/Navbar";
@@ -21,37 +17,33 @@ import {
   PermissionKey
 } from "../../../api/userAccessmanagementApi";
 
-// Create a type-safe default permissions object
+// Updated permission structure based on the image
 const defaultPermissions: Record<PermissionKey, boolean> = {
+  // Admin Panel
   homeDashboard: false,
+  
+  // P2P Section
+  p2pSection: false,
+  productionDashboard: false,
+  productionUpdate: false,
+  dayPlanUpload: false,
+  dayPlanReports: false,
+  dayPlanSummary: false,
+  
+  // User Management
   userManagement: false,
-  roleManagement: false,
-  systemSettings: false,
-  auditLogs: false,
-  backupRestore: false,
-  apiManagement: false,
-  reportGeneration: false,
-  dataExport: false,
-  systemMonitoring: false,
-  managerDashboard: false,
-  workOrderManagement: false,
-  teamManagement: false,
-  performanceReports: false,
-  inventoryView: false,
-  maintenanceScheduling: false,
-  costAnalysis: false,
-  kpiMonitoring: false,
-  documentManagement: false,
-  approvalWorkflows: false,
-  partsCatalog: false,
-  orderManagement: false,
-  deliveryTracking: false,
-  invoiceSubmission: false,
-  inventoryManagement: false,
-  contractView: false,
-  serviceRequests: false,
-  complianceDocuments: false,
-  performanceMetrics: false,
+  userAccount: false,
+  userManagementSub: false,
+  userAccessManagement: false,
+  
+  // System Management
+  systemManagement: false,
+  
+  // User Profile
+  userProfile: false,
+  
+  // Other Settings
+  autoRefresh: false,
 };
 
 const UserAccessManagementSystem = () => {
@@ -121,6 +113,19 @@ const UserAccessManagementSystem = () => {
     setPermissions(prev => ({ ...prev, [key]: e.target.checked }));
   };
 
+  // Handle parent permission changes (auto-check/uncheck children)
+  const handleParentPermissionChange = (parentKey: PermissionKey, childKeys: PermissionKey[]) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    setPermissions(prev => {
+      const newPermissions = { ...prev, [parentKey]: isChecked };
+      // If parent is checked, check all children; if unchecked, uncheck all children
+      childKeys.forEach(childKey => {
+        newPermissions[childKey] = isChecked;
+      });
+      return newPermissions;
+    });
+  };
+
   const showSnackbar = (message: string, severity: "success" | "error") => {
     setSnackbar({ open: true, message, severity });
   };
@@ -188,24 +193,70 @@ const UserAccessManagementSystem = () => {
     }
   };
 
-  const renderPermissionSection = (title: string, keys: PermissionKey[]) => (
-    <Grid item xs={12} md={4}>
-      <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>{title}</Typography>
-      <FormGroup>
-        {keys.map(key => (
-          <FormControlLabel
-            key={key}
-            control={
-              <Checkbox 
-                checked={permissions ? permissions[key] || false : false}
-                onChange={handlePermissionChange(key)}
-                disabled={loading}
-              />
-            }
-            label={key.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase())}
+  const renderCheckbox = (key: PermissionKey, label: string, bold: boolean = false, indented: boolean = false) => (
+    <FormControlLabel
+      key={key}
+      control={
+        <Checkbox 
+          checked={permissions ? permissions[key] || false : false}
+          onChange={handlePermissionChange(key)}
+          disabled={loading}
+        />
+      }
+      label={
+        <Typography variant="body1" sx={{ fontWeight: bold ? 'bold' : 'normal' }}>
+          {label}
+        </Typography>
+      }
+      sx={{ 
+        ml: indented ? 4 : 2,
+        '& .MuiFormControlLabel-label': {
+          fontSize: '0.875rem',
+          color: theme.palette.text.secondary
+        }
+      }}
+    />
+  );
+
+  const renderParentCheckbox = (
+    parentKey: PermissionKey, 
+    parentLabel: string, 
+    childKeys: PermissionKey[], 
+    childLabels: string[]
+  ) => (
+    <Box key={parentKey} sx={{ mb: 1 }}>
+      <FormControlLabel
+        control={
+          <Checkbox 
+            checked={permissions ? permissions[parentKey] || false : false}
+            onChange={handleParentPermissionChange(parentKey, childKeys)}
+            disabled={loading}
           />
-        ))}
-      </FormGroup>
+        }
+        label={<Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{parentLabel}</Typography>}
+        sx={{ ml: 2 }}
+      />
+      <Box sx={{ display: 'flex', flexDirection: 'column', ml: 2 }}>
+        {childKeys.map((childKey, index) => 
+          renderCheckbox(childKey, childLabels[index], false, true)
+        )}
+      </Box>
+    </Box>
+  );
+
+  const renderPermissionSection = (title: string, content: React.ReactNode) => (
+    <Grid item xs={12} md={6}>
+      <Typography variant="h6" sx={{ 
+        fontWeight: "bold", 
+        mb: 2, 
+        color: theme.palette.primary.main,
+        pl: 2
+      }}>
+        {title}
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {content}
+      </Box>
     </Grid>
   );
 
@@ -235,7 +286,7 @@ const UserAccessManagementSystem = () => {
           </Box>
         ) : (
           <Box sx={{ p: 3 }}>
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
               <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
                 <Typography>User Role:</Typography>
                 <Select 
@@ -281,21 +332,37 @@ const UserAccessManagementSystem = () => {
               />
             </Paper>
 
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h5" sx={{ mb: 3 }}>Role Permissions</Typography>
               <Grid container spacing={3}>
-                {renderPermissionSection("Admin Panel Access", [
-                  "homeDashboard", "userManagement", "roleManagement", "systemSettings",
-                  "auditLogs", "backupRestore", "apiManagement", "reportGeneration", "dataExport", "systemMonitoring"
-                ])}
-                {renderPermissionSection("Home Dashboard Access", [
-                  "managerDashboard", "workOrderManagement", "teamManagement", "performanceReports",
-                  "inventoryView", "maintenanceScheduling", "costAnalysis", "kpiMonitoring", "documentManagement", "approvalWorkflows"
-                ])}
-                {renderPermissionSection("Other Settings", [
-                  "partsCatalog", "orderManagement", "deliveryTracking", "invoiceSubmission",
-                  "inventoryManagement", "contractView", "serviceRequests", "complianceDocuments", "performanceMetrics"
-                ])}
+                {renderPermissionSection("Admin Panel", (
+                  <>
+                    {renderCheckbox("homeDashboard", "Home Dashboard", true)}
+                    
+                    {renderParentCheckbox(
+                      "p2pSection",
+                      "P2P Section",
+                      ["productionDashboard", "productionUpdate", "dayPlanUpload", "dayPlanReports", "dayPlanSummary"],
+                      ["Production Dashboard", "Production Update", "Day plan upload", "Day plan Reports", "Day plan Summary"]
+                    )}
+                    
+                    {renderParentCheckbox(
+                      "userManagement",
+                      "User Management",
+                      ["userAccount", "userManagementSub", "userAccessManagement"],
+                      ["User account", "User Management", "User Access Management"]
+                    )}
+                    
+                    {renderCheckbox("systemManagement", "System Management", true)}
+                    {renderCheckbox("userProfile", "User profile", true)}
+                  </>
+                ))}
+
+                {renderPermissionSection("Other Settings", (
+                  <>
+                    {renderCheckbox("autoRefresh", "Auto Refresh", true)}
+                  </>
+                ))}
               </Grid>
             </Paper>
           </Box>
