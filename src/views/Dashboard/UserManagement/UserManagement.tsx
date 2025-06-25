@@ -22,7 +22,8 @@ import {
   User,
   departments,
   userTypes,
-  availabilityOptions} from "../../../types/userManagementTypes";
+  availabilityOptions
+} from "../../../types/userManagementTypes";
 import {
   fetchUsers,
   createUser,
@@ -59,9 +60,7 @@ const UserManagement: React.FC = () => {
   // Fetch active users
   const { data: users = [], isLoading: isDataLoading } = useQuery<User[]>({
     queryKey: ["users"],
-    queryFn: () => fetchUsers().then(users =>
-      users.filter(user => user.availability === true)
-    ),
+    queryFn: fetchUsers, 
   });
 
   // Mutations

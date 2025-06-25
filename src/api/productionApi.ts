@@ -14,7 +14,7 @@ export type Production = z.infer<typeof productionSchema>;
 
 
 export async function fetchTeamData() {
-  const res = await axios.get("/api/team-no");
+  const res = await axios.get("/api/all-day-plans");
   return res.data;
 }
 

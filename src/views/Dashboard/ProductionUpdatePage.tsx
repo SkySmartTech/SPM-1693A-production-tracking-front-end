@@ -38,7 +38,8 @@ import {
   fetchColorData,
   fetchStyleData,
   fetchSizeData,
-  fetchCheckPointData
+  fetchCheckPointData,
+  fetchTeamData
 } from '../../api/productionApi';
 import { Controller, useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
@@ -74,6 +75,9 @@ interface ColorOption {
 }
 
 interface StyleOption {
+  sizeName: any;
+  lineNo: any;
+  actual_column_name: any;
   checkPointName: any;
   styleDescription: any;
   description: string;
@@ -272,7 +276,7 @@ const ProductionUpdatePage = () => {
 
   const { data: teamData } = useQuery<StyleOption[]>({
     queryKey: ["teams"],
-    queryFn: fetchSizeData,
+    queryFn: fetchTeamData,
   });
 
   const { data: colorData } = useQuery<ColorOption[]>({
@@ -359,7 +363,7 @@ const ProductionUpdatePage = () => {
                       {...field}
                       onChange={(_event, newValue) => field.onChange(newValue)}
                       size="small"
-                      options={teamData?.map(teamNo => teamNo.description) || []}
+                      options={teamData?.map(teamNo => teamNo.lineNo) || []}
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
@@ -428,7 +432,7 @@ const ProductionUpdatePage = () => {
                       {...field}
                       onChange={(_event, newValue) => field.onChange(newValue)}
                       size="small"
-                      options={sizeData?.map(size => size.description) || []}
+                      options={sizeData?.map(size => size.sizeName) || []}
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
@@ -451,7 +455,7 @@ const ProductionUpdatePage = () => {
                       {...field}
                       onChange={(_event, newValue) => field.onChange(newValue)}
                       size="small"
-                      options={checkPointData?.map(cp => cp.checkPointName) || []} // <-- Use correct property
+                      options={checkPointData?.map(cp => cp.actual_column_name) || []} 
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField

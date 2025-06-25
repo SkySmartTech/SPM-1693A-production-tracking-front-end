@@ -56,7 +56,7 @@ export const createUserRole = async (roleData: {
       userType: roleData.userType
     };
     const response = await axios.post(
-      `${API_BASE_URL}/api/user-access-create`,
+      `${API_BASE_URL}/api/add-user`,
       payload,
       getAuthHeader()
     );

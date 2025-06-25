@@ -1,4 +1,5 @@
 import axios from "axios";
+import * as XLSX from "xlsx";
 
 export interface DayPlan {
   id: number;
@@ -22,16 +23,11 @@ export interface DayPlan {
 
 export const fetchDayPlans = async (): Promise<DayPlan[]> => {
   try {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
     const response = await axios.get(
       `${import.meta.env.VITE_API_BASE_URL}/api/all-day-plans`,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
           Accept: 'application/json'
         }
       }
@@ -43,20 +39,20 @@ export const fetchDayPlans = async (): Promise<DayPlan[]> => {
 
     return response.data.map((plan: any) => ({
       id: plan.id || 0,
-      lineNo: plan.lineNo || "",
-      respEmployee: plan.respEmployee || "",
-      buyer: plan.buyer || "",
-      style: plan.style || "",
-      gg: plan.gg || "",
-      smv: plan.smv || "",
-      displayWH: plan.displayWH || "",
-      actualWH: plan.actualWH || "",
-      planTgtPcs: plan.planTgtPcs || "",
-      perHourPcs: plan.perHourPcs || "",
-      availableCader: plan.availableCader || "",
-      presentLinkers: plan.presentLinkers || "",
-      checkPoint: plan.checkPoint || "",
-      status: plan.status || "",
+      lineNo: plan.lineNo?.toString() || "",
+      respEmployee: plan.respEmployee?.toString() || "",
+      buyer: plan.buyer?.toString() || "",
+      style: plan.style?.toString() || "",
+      gg: plan.gg?.toString() || "",
+      smv: plan.smv?.toString() || "",
+      displayWH: plan.displayWH?.toString() || "",
+      actualWH: plan.actualWH?.toString() || "",
+      planTgtPcs: plan.planTgtPcs?.toString() || "",
+      perHourPcs: plan.perHourPcs?.toString() || "",
+      availableCader: plan.availableCader?.toString() || "",
+      presentLinkers: plan.presentLinkers?.toString() || "",
+      checkPoint: plan.checkPoint?.toString() || "",
+      status: plan.status?.toString() || "",
       created_at: plan.created_at || "",
       updated_at: plan.updated_at || ""
     }));
@@ -68,21 +64,27 @@ export const fetchDayPlans = async (): Promise<DayPlan[]> => {
 
 export const uploadDayPlanFile = async (file: File): Promise<{ success: boolean; message: string }> => {
   try {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const jsonArray = XLSX.utils.sheet_to_json(sheet);
 
-    const formData = new FormData();
-    formData.append('file', file);
+    // Fix types for backend validation
+    const fixedArray = jsonArray.map((row: any) => ({
+      ...row,
+      lineNo: row.lineNo?.toString() ?? "",
+      actualWH: row.actualWH?.toString() ?? "",
+      status: row.status !== undefined && row.status !== null && row.status !== "" ? parseInt(row.status, 10) : 0
+    }));
 
     const response = await axios.post(
       `${import.meta.env.VITE_API_BASE_URL}/api/day-plan-create`,
-      formData,
+      { day_plans: fixedArray },
       {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json'
         }
       }
     );
