@@ -108,19 +108,19 @@ const DayPlanUpload: React.FC = () => {
   const handleDownloadSample = () => {
     const sampleData = [
       {
-        line_no: "1",
-        resp_employee: "EMP001",
+        lineNo: "1",
+        respEmployee: "EMP001",
         buyer: "Buyer1",
         style: "Style1",
         gg: "GG1",
         smv: "2.5",
-        display_wh: "8",
-        actual_wh: "8",
-        plan_tgt_pcs: "1000",
-        per_hour_pcs: "125",
-        available_cader: "50",
-        present_linkers: "45",
-        check_point: "Check1",
+        displayWH: "8",
+        actualWH: "8",
+        planTgtPcs: "1000",
+        perHourPcs: "125",
+        availableCader: "50",
+        presentLinkers: "45",
+        checkPoint: "Check1",
         status: "Active"
       }
     ];
@@ -145,25 +145,23 @@ const DayPlanUpload: React.FC = () => {
 
   const columns: GridColDef<DayPlan>[] = [
     { field: "id", headerName: "ID", width: 60 },
-    { field: "line_no", headerName: "Line No", width: 50 },
-    { field: "resp_employee", headerName: "Resp Employee", width: 100 },
+    { field: "lineNo", headerName: "Line No", width: 50 },
+    { field: "respEmployee", headerName: "Resp Employee", width: 100 },
     { field: "buyer", headerName: "Buyer", width: 80 },
     { field: "style", headerName: "Style", width: 80 },
     { field: "gg", headerName: "GG", width: 60 },
     { field: "smv", headerName: "SMV", width: 80 },
-    { field: "display_wh", headerName: "Display WH", width: 90 },
-    { field: "actual_wh", headerName: "Actual WH", width: 90 },
-    { field: "plan_tgt_pcs", headerName: "Plan Tgt Pcs", width: 100 },
-    { field: "per_hour_pcs", headerName: "Per Hour Pcs", width: 100 },
-    { field: "available_cader", headerName: "Available Cader", width: 120 },
-    { field: "present_linkers", headerName: "Present Linkers", width: 100 },
-    { field: "check_point", headerName: "Check Point", width: 90 },
+    { field: "displayWH", headerName: "Display WH", width: 90 },
+    { field: "actualWH", headerName: "Actual WH", width: 90 },
+    { field: "planTgtPcs", headerName: "Plan Tgt Pcs", width: 100 },
+    { field: "perHourPcs", headerName: "Per Hour Pcs", width: 100 },
+    { field: "availableCader", headerName: "Available Cader", width: 120 },
+    { field: "presentLinkers", headerName: "Present Linkers", width: 100 },
+    { field: "checkPoint", headerName: "Check Point", width: 90 },
     { field: "status", headerName: "Status", width: 90 },
     { field: "created_at", headerName: "Created At", width: 90 },
     { field: "updated_at", headerName: "Updated At", width: 90 },
   ];
-
-
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));

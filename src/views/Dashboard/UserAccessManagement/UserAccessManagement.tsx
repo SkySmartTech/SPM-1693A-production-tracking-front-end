@@ -3,7 +3,8 @@ import {
   Box, Button, Checkbox, CircularProgress, FormControlLabel,
   MenuItem, Select, Typography, SelectChangeEvent,
   AppBar, Snackbar, Alert, Paper, CssBaseline, TextField, Grid,
-  Dialog, DialogTitle, DialogContent, DialogActions} from "@mui/material";
+  Dialog, DialogTitle, DialogContent, DialogActions
+} from "@mui/material";
 import Sidebar from "../../../components/Sidebar";
 import { useCustomTheme } from "../../../context/ThemeContext";
 import Navbar from "../../../components/Navbar";
@@ -17,7 +18,6 @@ import {
   PermissionKey
 } from "../../../api/userAccessmanagementApi";
 
-// Updated permission structure based on the image
 const defaultPermissions: Record<PermissionKey, boolean> = {
   // Admin Panel
   homeDashboard: false,
@@ -123,12 +123,10 @@ const UserAccessManagementSystem = () => {
     setPermissions(prev => ({ ...prev, [key]: e.target.checked }));
   };
 
-  // Handle parent permission changes (auto-check/uncheck children)
   const handleParentPermissionChange = (parentKey: PermissionKey, childKeys: PermissionKey[]) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const isChecked = e.target.checked;
     setPermissions(prev => {
       const newPermissions = { ...prev, [parentKey]: isChecked };
-      // If parent is checked, check all children; if unchecked, uncheck all children
       childKeys.forEach(childKey => {
         newPermissions[childKey] = isChecked;
       });
@@ -154,7 +152,7 @@ const UserAccessManagementSystem = () => {
     setLoading(true);
     try {
       await updateUserRole(selectedRoleId, {
-        userType: selectedRole, // <-- ensure this is sent
+        userType: selectedRole, 
         description: roleDescription,
         permissionObject: getSelectedPermissions(),
       });
@@ -180,7 +178,7 @@ const UserAccessManagementSystem = () => {
     setLoading(true);
     try {
       const newRole = await createUserRole({
-        userType: newRoleForm.userType, // <-- ensure this is sent
+        userType: newRoleForm.userType,
         description: newRoleForm.description,
         permissionObject: getSelectedPermissions(),
       });
@@ -376,7 +374,7 @@ const UserAccessManagementSystem = () => {
 
                 {renderPermissionSection("Other Settings", (
                   <>
-                    {renderCheckbox("autoRefresh", "Auto Refresh", true)}
+                    {renderCheckbox("autoRefresh", "Auto Refresh Dashboard", true)}
                   </>
                 ))}
               </Grid>
@@ -406,14 +404,14 @@ const UserAccessManagementSystem = () => {
                 fullWidth
                 label="Role Name"
                 value={newRoleForm.userType}
-                onChange={(e) => setNewRoleForm((prev: any) => ({ ...prev, userType: e.target.value }))}
+                onChange={(e) => setNewRoleForm(prev => ({ ...prev, userType: e.target.value }))}
                 disabled={loading}
               />
               <TextField
                 fullWidth
                 label="Description"
                 value={newRoleForm.description}
-                onChange={(e) => setNewRoleForm((prev: any) => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => setNewRoleForm(prev => ({ ...prev, description: e.target.value }))}
                 disabled={loading}
                 multiline
                 minRows={2}

@@ -1,21 +1,20 @@
-// src/api/dayPlanApi.ts
 import axios from "axios";
 
 export interface DayPlan {
   id: number;
-  line_no: string;
-  resp_employee: string;
+  lineNo: string;
+  respEmployee: string;
   buyer: string;
   style: string;
   gg: string;
   smv: string;
-  display_wh: string;
-  actual_wh: string;
-  plan_tgt_pcs: string;
-  per_hour_pcs: string;
-  available_cader: string;
-  present_linkers: string;
-  check_point: string;
+  displayWH: string;
+  actualWH: string;
+  planTgtPcs: string;
+  perHourPcs: string;
+  availableCader: string;
+  presentLinkers: string;
+  checkPoint: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -44,19 +43,19 @@ export const fetchDayPlans = async (): Promise<DayPlan[]> => {
 
     return response.data.map((plan: any) => ({
       id: plan.id || 0,
-      line_no: plan.line_no || "",
-      resp_employee: plan.resp_employee || "",
+      lineNo: plan.lineNo || "",
+      respEmployee: plan.respEmployee || "",
       buyer: plan.buyer || "",
       style: plan.style || "",
       gg: plan.gg || "",
       smv: plan.smv || "",
-      display_wh: plan.display_wh || "",
-      actual_wh: plan.actual_wh || "",
-      plan_tgt_pcs: plan.plan_tgt_pcs || "",
-      per_hour_pcs: plan.per_hour_pcs || "",
-      available_cader: plan.available_cader || "",
-      present_linkers: plan.present_linkers || "",
-      check_point: plan.check_point || "",
+      displayWH: plan.displayWH || "",
+      actualWH: plan.actualWH || "",
+      planTgtPcs: plan.planTgtPcs || "",
+      perHourPcs: plan.perHourPcs || "",
+      availableCader: plan.availableCader || "",
+      presentLinkers: plan.presentLinkers || "",
+      checkPoint: plan.checkPoint || "",
       status: plan.status || "",
       created_at: plan.created_at || "",
       updated_at: plan.updated_at || ""
