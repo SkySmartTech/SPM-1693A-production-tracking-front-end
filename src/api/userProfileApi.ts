@@ -2,6 +2,7 @@
 import axios from "axios";
 
 interface User {
+  id: number;
   employeeName: string;
   username: string;
   password: string;
@@ -20,6 +21,7 @@ export const fetchUserProfile = async (): Promise<User> => {
   });
 
   return {
+    id: response.data.id,
     employeeName: response.data.employeeName || "",
     username: response.data.username || "",
     password: "********",
@@ -31,8 +33,8 @@ export const fetchUserProfile = async (): Promise<User> => {
   };
 };
 
-export const updateUserProfile = async (user: Partial<User>): Promise<void> => {
-  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/${user.epf}/profile-update`, user, {
+export const updateUserProfile = async (id: number, user: Partial<User>): Promise<void> => {
+  await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/${id}/profile-update`, user, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem('authToken')}`
     }

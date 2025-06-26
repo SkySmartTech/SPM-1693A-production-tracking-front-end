@@ -29,6 +29,7 @@ import { fetchUserProfile, updateUserProfile, uploadUserPhoto } from "../../api/
 const departments = ["IT", "HR", "Finance", "Marketing", "Operations"];
 
 interface User {
+  id: number;
   employeeName: string;
   username: string;
   password: string;
@@ -40,6 +41,7 @@ interface User {
 }
 
 const defaultUser: User = {
+  id: 0,
   employeeName: "",
   username: "",
   password: "********",
@@ -86,8 +88,8 @@ const UserProfile: React.FC = () => {
   }, [user]);
 
   // Update profile mutation
-  const updateProfileMutation = useMutation<void, Error, Partial<User>>({
-    mutationFn: updateUserProfile,
+  const updateProfileMutation = useMutation<void, Error, { id: number, user: Partial<User> }>({
+    mutationFn: ({ id, user }) => updateUserProfile(id, user),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       setOpenEdit(false);
@@ -187,9 +189,8 @@ const UserProfile: React.FC = () => {
     }
 
     try {
-      // Create a copy of editUser without the photo property
-      const { photo, ...userData } = editUser;
-      await updateProfileMutation.mutateAsync(userData);
+      const { photo, id, ...userData } = editUser;
+      await updateProfileMutation.mutateAsync({ id: editUser.id, user: userData });
     } catch (error) {
       console.error("Update error:", error);
     }
