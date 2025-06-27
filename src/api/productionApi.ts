@@ -37,7 +37,6 @@ export async function fetchCheckPointData() {
   return res.data;
 }
 
-// Add this function for fetching buyer/style/gg/smv/presentCarder
 export async function fetchBuyerDetails(lineNo: string) {
   const res = await axios.post("/api/get-buyer", { lineNo });
   return res.data;
@@ -45,5 +44,9 @@ export async function fetchBuyerDetails(lineNo: string) {
 
 export async function fetchDefectReworkOptions() {
   const res = await axios.get("/api/all-defects");
-  return res.data;
+  return {
+    parts: [], 
+    locations: [], 
+    defectCodes: res.data.map((item: any) => item.defectCode),
+  };
 }
