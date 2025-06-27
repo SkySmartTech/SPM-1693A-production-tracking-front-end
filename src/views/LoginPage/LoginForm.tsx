@@ -65,9 +65,15 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
 
   const { mutate: loginMutation, isPending } = useMutation({
     mutationFn: login,
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["current-user"] });
       localStorage.setItem("token", data?.token);
+      // Remember or forget username based on checkbox
+      if (rememberMe) {
+        localStorage.setItem("rememberedUsername", variables.username);
+      } else {
+        localStorage.removeItem("rememberedUsername");
+      }
       enqueueSnackbar("Welcome Back!", { variant: "success" });
       navigate("/home");
     },

@@ -12,7 +12,6 @@ export const productionSchema = z.object({
 
 export type Production = z.infer<typeof productionSchema>;
 
-
 export async function fetchTeamData() {
   const res = await axios.get("/api/all-day-plans");
   return res.data;
@@ -24,7 +23,7 @@ export async function fetchColorData() {
 }
 
 export async function fetchStyleData() {
-  const res = await axios.get("/api/all-styles");
+  const res = await axios.get("/api/all-day-plans");
   return res.data;
 }
 
@@ -38,6 +37,13 @@ export async function fetchCheckPointData() {
   return res.data;
 }
 
+// Add this function for fetching buyer/style/gg/smv/presentCarder
+export async function fetchBuyerDetails(lineNo: string) {
+  const res = await axios.post("/api/get-buyer", { lineNo });
+  return res.data;
+}
 
-
-
+export async function fetchDefectReworkOptions() {
+  const res = await axios.get("/api/all-defects");
+  return res.data;
+}
