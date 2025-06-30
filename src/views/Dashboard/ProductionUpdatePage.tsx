@@ -40,12 +40,12 @@ import {
   fetchSizeData,
   fetchCheckPointData,
   fetchTeamData,
-  fetchBuyerDetails,
-  fetchDefectReworkOptions
+  fetchBuyerDetails
 } from '../../api/productionApi';
 import { Controller, useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '../../components/Navbar';
+import axios from 'axios';
 
 interface ProductionData {
   buyer: string;
@@ -778,3 +778,12 @@ const ProductionUpdatePage = () => {
 };
 
 export default ProductionUpdatePage;
+
+export async function fetchDefectReworkOptions() {
+  const res = await axios.get("/api/all-defects");
+  return {
+    parts: ['Sleeve', 'Collar', 'Front Panel', 'Back Panel'], // hardcoded sample parts
+    locations: ['Left', 'Right', 'Center', 'Bottom'],         // hardcoded sample locations
+    defectCodes: res.data.map((item: any) => item.defectCode),
+  };
+}
