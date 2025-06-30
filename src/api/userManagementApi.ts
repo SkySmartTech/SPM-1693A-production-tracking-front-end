@@ -37,3 +37,13 @@ export const deactivateUser = async (id: number): Promise<void> => {
     }
   });
 };
+
+export const searchUsers = async (searchTerm: string): Promise<User[]> => {
+  const response = await axios.get(`${API_BASE_URL}/api/users/search`, {
+    params: { q: searchTerm },
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
+  return response.data;
+};
