@@ -49,9 +49,17 @@ interface Defect {
 
 interface CheckPoint {
   id: number;
-  name: string;
+  actual_column_name: string;
   description: string;
   status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PartLocation {
+  id: number;
+  part: string;
+  location: string;
   created_at: string;
   updated_at: string;
 }
@@ -129,6 +137,17 @@ export const fetchCheckPoints = async (): Promise<CheckPoint[]> => {
   }
 };
 
+// Fetch all part locations
+export const fetchPartLocations = async (): Promise<PartLocation[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/all-part-locations`, getAuthHeader());
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching part locations:', error);
+    throw error;
+  }
+};
+
 // Create new items
 export const createColor = async (data: Omit<Color, 'id' | 'created_at' | 'updated_at'>): Promise<Color> => {
   try {
@@ -186,6 +205,19 @@ export const createCheckPoint = async (data: Omit<CheckPoint, 'id' | 'created_at
     return response.data;
   } catch (error) {
     console.error('Error creating check point:', error);
+    throw error;
+  }
+};
+
+// Create new part location
+export const createPartLocation = async (
+  data: Omit<PartLocation, 'id' | 'created_at' | 'updated_at'>
+): Promise<PartLocation> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/part-location-create`, data, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    console.error('Error creating part location:', error);
     throw error;
   }
 };
@@ -251,6 +283,20 @@ export const updateCheckPoint = async (id: number, data: Partial<CheckPoint>): P
   }
 };
 
+// Update part location
+export const updatePartLocation = async (
+  id: number,
+  data: Partial<PartLocation>
+): Promise<PartLocation> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/part-location/${id}/update`, data, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    console.error('Error updating part location:', error);
+    throw error;
+  }
+};
+
 // Delete items
 export const deleteColor = async (id: number): Promise<void> => {
   try {
@@ -302,6 +348,16 @@ export const deleteCheckPoint = async (id: number): Promise<void> => {
     await axios.delete(`${API_BASE_URL}/api/check-point/${id}/delete`, getAuthHeader());
   } catch (error) {
     console.error('Error deleting check point:', error);
+    throw error;
+  }
+};
+
+// Delete part location
+export const deletePartLocation = async (id: number): Promise<void> => {
+  try {
+    await axios.delete(`${API_BASE_URL}/api/part-location/${id}/delete`, getAuthHeader());
+  } catch (error) {
+    console.error('Error deleting part location:', error);
     throw error;
   }
 };
