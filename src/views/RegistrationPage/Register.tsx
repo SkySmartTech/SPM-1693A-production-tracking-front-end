@@ -13,7 +13,7 @@ const Register = () => {
         alignItems: "center",
         justifyContent: "center",
         backgroundImage: 'url("/images/l1.png")',
-        backgroundSize: "720px 1000px",
+        backgroundSize: "768px 1000px",
         backgroundPosition: "left",
         backgroundRepeat: "no-repeat",
         backgroundAttachment: "fixed",

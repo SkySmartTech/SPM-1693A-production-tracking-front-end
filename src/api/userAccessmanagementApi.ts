@@ -1,25 +1,27 @@
 import axios from "axios";
 
 export type PermissionKey = 
-  | "adminDashboard" | "userManagement" | "roleManagement" | "systemSettings" | "auditLogs" | "backupRestore" | "apiManagement" | "reportGeneration" | "dataExport" | "systemMonitoring"
-  | "managerDashboard" | "workOrderManagement" | "teamManagement" | "performanceReports" | "inventoryView" | "maintenanceScheduling" | "costAnalysis" | "kpiMonitoring" | "documentManagement" | "approvalWorkflows"
-  | "partsCatalog" | "orderManagement" | "deliveryTracking" | "invoiceSubmission" | "inventoryManagement" | "contractView" | "serviceRequests" | "complianceDocuments" | "performanceMetrics";
-
-interface PermissionObject {
-  [key: string]: boolean;
-}
+  | "homeDashboard"
+  | "p2pSection"
+  | "productionDashboard"
+  | "productionUpdate"
+  | "dayPlanUpload"
+  | "dayPlanReports"
+  | "dayPlanSummary"
+  | "userManagement"
+  | "userAccount"
+  | "userManagementSub"
+  | "userAccessManagement"
+  | "systemManagement"
+  | "userProfile"
+  | "autoRefresh";
 
 export interface UserRole {
+  userType: string | number | readonly string[] | undefined;
   id: string;
   name: string;
   description: string;
-  userType: string; 
-  permissionObject: Record<PermissionKey, boolean>;
-}
-
-export interface UserType {
-  id: number;
-  userType: string;
+  permissionObject: PermissionKey[];
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -34,117 +36,66 @@ const getAuthHeader = () => {
   };
 };
 
-// Fetch only user types for dropdown
-export const fetchUserTypes = async (): Promise<UserType[]> => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/api/user-roles`, getAuthHeader());
-    return response.data.map((role: any) => ({
-      id: role.id,
-      userType: role.userType
-    }));
-  } catch (error) {
-    console.error('Error fetching user types:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to fetch user types'
-    );
-  }
-};
-
-// Fetch full role details when needed
 export const fetchUserRoles = async (): Promise<UserRole[]> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/user-roles`, getAuthHeader());
+    const response = await axios.get(`${API_BASE_URL}/api/user-accesses`, getAuthHeader());
     return response.data;
   } catch (error) {
-    console.error('Error fetching user roles:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to fetch user roles'
-    );
+    throw new Error('Failed to fetch user roles');
   }
 };
 
-// Create new role
 export const createUserRole = async (roleData: {
-  name: string;
   userType: string;
   description: string;
-  permissionObject: Record<PermissionKey, boolean>;
+  permissionObject: PermissionKey[];
 }): Promise<UserRole> => {
   try {
+    const payload = {
+      ...roleData,
+      userType: roleData.userType
+    };
     const response = await axios.post(
-      `${API_BASE_URL}/api/user-role-create`,
-      roleData,
+      `${API_BASE_URL}/api/add-user`,
+      payload,
       getAuthHeader()
     );
     return response.data;
   } catch (error) {
-    console.error('Error creating user role:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to create user role'
-    );
+    throw new Error('Failed to create user role');
   }
 };
 
-// Update role
-export const updateUserRole = async (id: string, roleData: Partial<UserRole>): Promise<UserRole> => {
+export const updateUserRole = async (id: string, roleData: Partial<Omit<UserRole, 'id'>>): Promise<UserRole> => {
   try {
-    const response = await axios.put(
-      `${API_BASE_URL}/api/user-role/${id}/update`,
+    const response = await axios.post(
+      `${API_BASE_URL}/api/user-access/${id}/update`,
       roleData,
       getAuthHeader()
     );
     return response.data;
   } catch (error) {
-    console.error('Error updating user role:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to update user role'
-    );
+    throw new Error('Failed to update user role');
   }
 };
 
-// Delete role
 export const deleteUserRole = async (id: string): Promise<void> => {
   try {
     await axios.delete(
-      `${API_BASE_URL}/api/user-role/${id}/delete`,
+      `${API_BASE_URL}/api/user-access/${id}/delete`,
       getAuthHeader()
     );
   } catch (error) {
-    console.error('Error deleting user role:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to delete user role'
-    );
+    throw new Error('Failed to delete user role');
   }
 };
 
-// Create user access permissions
-export const createUserAccess = async (accessData: {
-  userType: string;
-  description: string;
-  permissionObject: PermissionObject;
-}): Promise<void> => {
+export const checkUserPermission = async (permission: PermissionKey): Promise<boolean> => {
   try {
-    await axios.post(
-      `${API_BASE_URL}/api/user-access-create`,
-      accessData,
-      getAuthHeader()
-    );
+    const response = await axios.get(`${API_BASE_URL}/api/user-permissions`, getAuthHeader());
+    return response.data.permissions.includes(permission);
   } catch (error) {
-    console.error('Error creating user access:', error);
-    throw new Error(
-      axios.isAxiosError(error) 
-        ? error.response?.data?.message || error.message 
-        : 'Failed to create user access'
-    );
+    console.error('Error checking user permission:', error);
+    return false;
   }
 };

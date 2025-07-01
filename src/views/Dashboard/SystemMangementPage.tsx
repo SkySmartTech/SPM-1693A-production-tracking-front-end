@@ -53,6 +53,7 @@ import {
   fetchOperationOptions,
   createColor, createSize, createStyle, createOperation, createDefect, createCheckPoint,
   updateColor, updateSize, updateStyle, updateOperation, updateDefect, updateCheckPoint,
+  fetchPartLocations, deletePartLocation, createPartLocation, updatePartLocation
 } from '../../api/systemManagementApi';
 import Navbar from '../../components/Navbar';
 
@@ -82,6 +83,7 @@ const SystemManagement = () => {
   const [operations, setOperations] = useState<any[]>([]);
   const [defects, setDefects] = useState<any[]>([]);
   const [checkPoints, setCheckPoints] = useState<any[]>([]);
+  const [partLocations, setPartLocations] = useState<any[]>([]); 
 
   // Dropdown options
   const [styleOptions, setStyleOptions] = useState<{ styleNo: string }[]>([]);
@@ -121,6 +123,10 @@ const SystemManagement = () => {
           case 5:
             const checkPointsData = await fetchCheckPoints();
             setCheckPoints(checkPointsData);
+            break;
+          case 6:
+            const partLocationsData = await fetchPartLocations();
+            setPartLocations(partLocationsData);
             break;
         }
       } catch (error) {
@@ -188,6 +194,7 @@ const SystemManagement = () => {
         case 3: await deleteOperation(id); break;
         case 4: await deleteDefect(id); break;
         case 5: await deleteCheckPoint(id); break;
+        case 6: await deletePartLocation(id); break; // Handle new tab
       }
       showSnackbar('Item deleted successfully', 'success');
 
@@ -199,6 +206,7 @@ const SystemManagement = () => {
         case 3: setOperations(await fetchOperations()); break;
         case 4: setDefects(await fetchDefects()); break;
         case 5: setCheckPoints(await fetchCheckPoints()); break;
+        case 6: setPartLocations(await fetchPartLocations()); break; // Refresh for new tab
       }
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -222,6 +230,7 @@ const SystemManagement = () => {
           case 3: await updateOperation(editId, formData); break;
           case 4: await updateDefect(editId, formData); break;
           case 5: await updateCheckPoint(editId, formData); break;
+          case 6: await updatePartLocation(editId, formData); break; // Handle new tab
         }
       } else {
         // Create new item
@@ -232,6 +241,7 @@ const SystemManagement = () => {
           case 3: await createOperation(formData); break;
           case 4: await createDefect(formData); break;
           case 5: await createCheckPoint(formData); break;
+          case 6: await createPartLocation(formData); break; // Handle new tab
         }
       }
 
@@ -246,6 +256,7 @@ const SystemManagement = () => {
         case 3: setOperations(await fetchOperations()); break;
         case 4: setDefects(await fetchDefects()); break;
         case 5: setCheckPoints(await fetchCheckPoints()); break;
+        case 6: setPartLocations(await fetchPartLocations()); break; // Refresh for new tab
       }
     } catch (error: any) {
       console.error('Error saving data:', error);
@@ -508,7 +519,7 @@ const SystemManagement = () => {
                 {checkPoints.map((checkPoint) => (
                   <TableRow key={checkPoint.id}>
                     <TableCell>{checkPoint.id}</TableCell>
-                    <TableCell>{checkPoint.checkPointName}</TableCell>
+                    <TableCell>{checkPoint.actual_column_name}</TableCell>
                     <TableCell>{checkPoint.created_at}</TableCell>
                     <TableCell>{checkPoint.updated_at}</TableCell>
                     <TableCell>
@@ -516,6 +527,42 @@ const SystemManagement = () => {
                         <EditIcon color="primary" />
                       </IconButton>
                       <IconButton onClick={() => handleDeleteClick(checkPoint.id)}>
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        );
+      case 6: // Part Location
+        return (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Part</TableCell>
+                  <TableCell>Location</TableCell>
+                  <TableCell>Created At</TableCell>
+                  <TableCell>Updated At</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {partLocations.map((partLocation) => (
+                  <TableRow key={partLocation.id}>
+                    <TableCell>{partLocation.id}</TableCell>
+                    <TableCell>{partLocation.part}</TableCell>
+                    <TableCell>{partLocation.location}</TableCell>
+                    <TableCell>{partLocation.created_at}</TableCell>
+                    <TableCell>{partLocation.updated_at}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleEditClick(partLocation)}>
+                        <EditIcon color="primary" />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteClick(partLocation.id)}>
                         <DeleteIcon color="error" />
                       </IconButton>
                     </TableCell>
@@ -775,12 +822,37 @@ const SystemManagement = () => {
             <TextField
               fullWidth
               label="Name"
-              name="checkPointName"
-              value={formData.checkPointName || ''}
+              name="actual_column_name"
+              value={formData.actual_column_name|| ''}
               onChange={handleFormChange}
               margin="normal"
-              error={!!fieldErrors.checkPointName}
-              helperText={fieldErrors.checkPointName}
+              error={!!fieldErrors.actual_column_name}
+              helperText={fieldErrors.actual_column_name}
+            />
+          </>
+        );
+      case 6: // Part Location
+        return (
+          <>
+            <TextField
+              fullWidth
+              label="Part"
+              name="part"
+              value={formData.part || ''}
+              onChange={handleFormChange}
+              margin="normal"
+              error={!!fieldErrors.part}
+              helperText={fieldErrors.part}
+            />
+            <TextField
+              fullWidth
+              label="Location"
+              name="location"
+              value={formData.location || ''}
+              onChange={handleFormChange}
+              margin="normal"
+              error={!!fieldErrors.location}
+              helperText={fieldErrors.location}
             />
           </>
         );
@@ -822,6 +894,7 @@ const SystemManagement = () => {
               <Tab label="Operations" />
               <Tab label="Defects" />
               <Tab label="Check Points" />
+              <Tab label="Part Location" /> {/* New Tab */}
             </Tabs>
           </Box>
 

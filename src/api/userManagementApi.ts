@@ -31,9 +31,19 @@ export const updateUser = async (id: number, userData: User): Promise<User> => {
 };
 
 export const deactivateUser = async (id: number): Promise<void> => {
-  await axios.patch(`${API_BASE_URL}/api/user/${id}/availability-update`, {}, {
+  await axios.post(`${API_BASE_URL}/api/user/${id}/availability-update`, {}, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem('authToken')}`
     }
   });
+};
+
+export const searchUsers = async (searchTerm: string): Promise<User[]> => {
+  const response = await axios.get(`${API_BASE_URL}/api/users/search`, {
+    params: { q: searchTerm },
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('authToken')}`
+    }
+  });
+  return response.data;
 };
