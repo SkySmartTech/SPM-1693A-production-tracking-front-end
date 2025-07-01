@@ -1,12 +1,39 @@
 import axios from 'axios';
 
-
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   }
 });
+
+// Session timeout variables
+let inactivityTimer: NodeJS.Timeout;
+const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+// Function to reset the inactivity timer
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    // Logout user when timer expires
+    logout();
+    // Redirect to login page
+    window.location.href = '/login';
+  }, SESSION_TIMEOUT);
+}
+
+// Function to setup activity listeners
+function setupActivityListeners() {
+  // Listen for user activity events
+  const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+  
+  events.forEach(event => {
+    window.addEventListener(event, resetInactivityTimer);
+  });
+  
+  // Initialize the timer
+  resetInactivityTimer();
+}
 
 // Login function
 export async function login({
@@ -26,9 +53,34 @@ export async function login({
     if (res.data.user) {
       localStorage.setItem('user', JSON.stringify(res.data.user));
     }
+    // Start tracking activity after successful login
+    setupActivityListeners();
   }
 
   return res.data;
+}
+
+// Logout function
+export async function logout() {
+  const token = localStorage.getItem('token');
+  
+  // Clear the inactivity timer
+  clearTimeout(inactivityTimer);
+
+  if (!token) return;
+
+  try {
+    await api.post('/api/logout', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.error("Logout failed:", error);
+  } finally {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
 }
 
 // Validate user session
@@ -37,7 +89,7 @@ export async function validateUser() {
   if (!token) return null;
 
   try {
-    const response = await api.get('/api/user', {  // Updated path to include /api/
+    const response = await api.get('/api/user', {  
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -45,6 +97,8 @@ export async function validateUser() {
 
     if (response.data.user) {
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Reset activity timer on validation
+      resetInactivityTimer();
       return response.data.user;
     }
     return null;
@@ -55,25 +109,6 @@ export async function validateUser() {
     }
     console.error("User validation failed:", error);
     return null;
-  }
-}
-
-// Logout function
-export async function logout() {
-  const token = localStorage.getItem('token');
-  if (!token) return;
-
-  try {
-    await api.post('/api/logout', {}, {  // Updated path to include /api/
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  } catch (error) {
-    console.error("Logout failed:", error);
-  } finally {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
   }
 }
 
@@ -93,12 +128,17 @@ api.interceptors.request.use(
 
 // Add response interceptor to handle token expiration
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Reset activity timer on successful API responses
+    resetInactivityTimer();
+    return response;
+  },
   async (error) => {
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        clearTimeout(inactivityTimer);
         window.location.href = '/login';
       }
     }

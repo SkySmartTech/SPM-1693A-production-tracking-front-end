@@ -12,9 +12,8 @@ export const productionSchema = z.object({
 
 export type Production = z.infer<typeof productionSchema>;
 
-
 export async function fetchTeamData() {
-  const res = await axios.get("/api/team-no");
+  const res = await axios.get("/api/all-day-plans");
   return res.data;
 }
 
@@ -24,7 +23,7 @@ export async function fetchColorData() {
 }
 
 export async function fetchStyleData() {
-  const res = await axios.get("/api/all-styles");
+  const res = await axios.get("/api/all-day-plans");
   return res.data;
 }
 
@@ -33,7 +32,21 @@ export async function fetchSizeData() {
   return res.data;
 }
 
+export async function fetchCheckPointData() {
+  const res = await axios.get("/api/all-check-points"); 
+  return res.data;
+}
 
+export async function fetchBuyerDetails(lineNo: string) {
+  const res = await axios.post("/api/get-buyer", { lineNo });
+  return res.data;
+}
 
-
-
+export async function fetchDefectReworkOptions() {
+  const res = await axios.get("/api/all-defects");
+  return {
+    parts: [], 
+    locations: [], 
+    defectCodes: res.data.map((item: any) => item.defectCode),
+  };
+}

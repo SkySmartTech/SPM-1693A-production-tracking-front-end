@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   AppBar,
   Typography,
@@ -10,6 +10,7 @@ import {
   Divider,
   CssBaseline,
   useTheme,
+  Alert,
 } from "@mui/material";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
@@ -17,6 +18,7 @@ import { dashboardInfo } from "../../data/dashboardInfo";
 import { DashboardData, dashboardData as mockData } from "../../data/dashboardData";
 import { useCustomTheme } from "../../context/ThemeContext";
 import Navbar from "../../components/Navbar";
+import { checkUserPermission } from "../../api/userAccessmanagementApi";
 
 const Dashboard = () => {
   const [] = useState(false);
@@ -25,30 +27,73 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const [, setRefreshCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   useCustomTheme();
 
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Replace with your actual API endpoint
+      const response = await axios.get("http://your-backend-api.com/dashboard-data", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      setDashboardData(response.data);
+      setHourlyData(response.data.hourly || []);
+
+      // For demo purposes, still use mock data
+      setDashboardData(mockData);
+      setHourlyData([56, 45, 60, 55, 48, 52, 49, 51]);
+      setError(null);
+      setRefreshCount(prev => prev + 1);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      setDashboardData(mockData);
+      setHourlyData([0, 0, 0, 0, 0, 0, 0, 0]);
+      setError("Failed to fetch dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("http://your-backend-api.com/dashboard-data");
-        setDashboardData(response.data);
-        setHourlyData(response.data.hourly || []);
+    // Initial data fetch
+    fetchData();
 
-        setDashboardData(mockData);
-        setHourlyData([56, 45, 60, 55, 48, 52, 49, 51]);
+    // Check auto refresh permission
+    const checkPermissions = async () => {
+      try {
+        const hasPermission = await checkUserPermission("autoRefresh");
+        setAutoRefreshEnabled(hasPermission);
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        setDashboardData(mockData);
-        setHourlyData([0, 0, 0, 0, 0, 0, 0, 0]);
-      } finally {
-        setLoading(false);
+        console.error("Error checking permissions:", error);
+        setAutoRefreshEnabled(false);
       }
     };
 
-    fetchData();
-  }, []);
+    checkPermissions();
+
+    return () => {
+    };
+  }, [fetchData]);
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (autoRefreshEnabled) {
+      intervalId = setInterval(() => {
+        fetchData();
+      }, 120000); // 2 minutes in milliseconds
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [autoRefreshEnabled, fetchData]);
 
   return (
     <Box sx={{ display: "flex", width: "100%", height: "100vh", minHeight: "100vh" }}>
@@ -56,7 +101,6 @@ const Dashboard = () => {
       <Sidebar
         open={sidebarOpen || hovered}
         setOpen={setSidebarOpen}
-
       />
       <Box component="main" sx={{ flexGrow: 1 }}>
         <AppBar
@@ -77,6 +121,18 @@ const Dashboard = () => {
         </AppBar>
 
         <Box sx={{ p: 2 }}>
+          {autoRefreshEnabled && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Auto-refresh enabled (every 2 minutes). Last refreshed: {new Date().toLocaleTimeString()}
+            </Alert>
+          )}
+          
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
           <Stack spacing={2} sx={{ my: 1 }}>
             <Card sx={{ p: 0, textAlign: "center", borderRadius: "8px", boxShadow: 1 }}>
               <CardContent>

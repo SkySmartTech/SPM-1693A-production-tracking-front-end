@@ -1,70 +1,56 @@
 import { useState, useEffect } from "react";
 import {
   Box, Button, Checkbox, CircularProgress, FormControlLabel,
-  FormGroup, MenuItem, Select, Typography, SelectChangeEvent,
+  MenuItem, Select, Typography, SelectChangeEvent,
   AppBar, Snackbar, Alert, Paper, CssBaseline, TextField, Grid,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from "@mui/material";
 import Sidebar from "../../../components/Sidebar";
 import { useCustomTheme } from "../../../context/ThemeContext";
 import Navbar from "../../../components/Navbar";
 import { useTheme } from "@mui/material/styles";
 import {
-  fetchUserTypes,
   fetchUserRoles,
   createUserRole,
   updateUserRole,
   deleteUserRole,
-  createUserAccess,
   UserRole,
-  UserType,
   PermissionKey
 } from "../../../api/userAccessmanagementApi";
 
-// Create a type-safe default permissions object
 const defaultPermissions: Record<PermissionKey, boolean> = {
-  adminDashboard: false,
+  // Admin Panel
+  homeDashboard: false,
+  
+  // P2P Section
+  p2pSection: false,
+  productionDashboard: false,
+  productionUpdate: false,
+  dayPlanUpload: false,
+  dayPlanReports: false,
+  dayPlanSummary: false,
+  
+  // User Management
   userManagement: false,
-  roleManagement: false,
-  systemSettings: false,
-  auditLogs: false,
-  backupRestore: false,
-  apiManagement: false,
-  reportGeneration: false,
-  dataExport: false,
-  systemMonitoring: false,
-  managerDashboard: false,
-  workOrderManagement: false,
-  teamManagement: false,
-  performanceReports: false,
-  inventoryView: false,
-  maintenanceScheduling: false,
-  costAnalysis: false,
-  kpiMonitoring: false,
-  documentManagement: false,
-  approvalWorkflows: false,
-  partsCatalog: false,
-  orderManagement: false,
-  deliveryTracking: false,
-  invoiceSubmission: false,
-  inventoryManagement: false,
-  contractView: false,
-  serviceRequests: false,
-  complianceDocuments: false,
-  performanceMetrics: false,
+  userAccount: false,
+  userManagementSub: false,
+  userAccessManagement: false,
+  
+  // System Management
+  systemManagement: false,
+  
+  // User Profile
+  userProfile: false,
+  
+  // Other Settings
+  autoRefresh: false,
 };
 
 const UserAccessManagementSystem = () => {
-  const [userTypes, setUserTypes] = useState<UserType[]>([]);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [roleDescription, setRoleDescription] = useState<string>("");
-  const [, setUserType] = useState<string>("");
-  // Initialize permissions with defaultPermissions
   const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>(defaultPermissions);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,67 +64,74 @@ const UserAccessManagementSystem = () => {
     severity: "success" as "success" | "error"
   });
 
-  // Define the type for the new role form
   type NewRoleForm = {
-    name: string;
     userType: string;
+    description: string;
   };
 
   const [newRoleDialog, setNewRoleDialog] = useState(false);
   const [newRoleForm, setNewRoleForm] = useState<NewRoleForm>({
-    name: '',
-    userType: ''
+    userType: '',
+    description: '',
   });
 
-  // Add error handling for data loading
   useEffect(() => {
     loadData();
   }, []);
+
+  const arrayToPermissionsObject = (arr: string[] | undefined): Record<PermissionKey, boolean> => {
+    const obj = { ...defaultPermissions };
+    if (Array.isArray(arr)) {
+      arr.forEach(key => {
+        if (key in obj) obj[key as PermissionKey] = true;
+      });
+    }
+    return obj;
+  };
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [types, fetchedRoles] = await Promise.all([
-        fetchUserTypes(),
-        fetchUserRoles()
-      ]);
-
-      setUserTypes(types || []);
+      const fetchedRoles = await fetchUserRoles();
       setRoles(fetchedRoles || []);
-      
       if (fetchedRoles && fetchedRoles.length > 0) {
         const firstRole = fetchedRoles[0];
-        setSelectedRole(firstRole.name);
+        setSelectedRole(String(firstRole.userType));
         setSelectedRoleId(firstRole.id);
         setRoleDescription(firstRole.description);
-        setUserType(firstRole.userType);
-        // Ensure permissions are never undefined
-        setPermissions(firstRole.permissionObject || defaultPermissions);
+        setPermissions(arrayToPermissionsObject(firstRole.permissionObject));
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while loading data';
-      setError(errorMessage);
-      showSnackbar(errorMessage, "error");
+      setError('An error occurred while loading data');
+      showSnackbar('An error occurred while loading data', "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Update the permissions handling in the role change effect
   useEffect(() => {
-    const role = roles.find(r => r.name === selectedRole);
+    const role = roles.find(r => r.userType === selectedRole);
     if (role) {
       setSelectedRoleId(role.id);
       setRoleDescription(role.description);
-      setUserType(role.userType);
-      // Ensure permissions are never undefined
-      setPermissions(role.permissionObject || defaultPermissions);
+      setPermissions(arrayToPermissionsObject(role.permissionObject));
     }
   }, [selectedRole, roles]);
 
   const handlePermissionChange = (key: PermissionKey) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setPermissions(prev => ({ ...prev, [key]: e.target.checked }));
+  };
+
+  const handleParentPermissionChange = (parentKey: PermissionKey, childKeys: PermissionKey[]) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    setPermissions(prev => {
+      const newPermissions = { ...prev, [parentKey]: isChecked };
+      childKeys.forEach(childKey => {
+        newPermissions[childKey] = isChecked;
+      });
+      return newPermissions;
+    });
   };
 
   const showSnackbar = (message: string, severity: "success" | "error") => {
@@ -149,18 +142,23 @@ const UserAccessManagementSystem = () => {
     setSelectedRole(e.target.value);
   };
 
+  const getSelectedPermissions = () =>
+    Object.entries(permissions)
+      .filter(([_, value]) => value)
+      .map(([key]) => key as PermissionKey);
+
   const handleUpdate = async () => {
-    if (!selectedRoleId) return;
-    
+    if (!selectedRoleId || !selectedRole) return;
     setLoading(true);
     try {
       await updateUserRole(selectedRoleId, {
+        userType: selectedRole, 
         description: roleDescription,
-        permissionObject: permissions
+        permissionObject: getSelectedPermissions(),
       });
       await loadData();
       showSnackbar("Role updated successfully!", "success");
-    } catch (error) {
+    } catch {
       showSnackbar("Failed to update role", "error");
     } finally {
       setLoading(false);
@@ -168,36 +166,27 @@ const UserAccessManagementSystem = () => {
   };
 
   const handleNew = () => {
-    setNewRoleForm({ name: '', userType: '' });
+    setNewRoleForm({ userType: '', description: '' });
     setNewRoleDialog(true);
   };
 
   const handleCreateRole = async () => {
-    if (!newRoleForm.name || !newRoleForm.userType) {
+    if (!newRoleForm.userType || !newRoleForm.description) {
       showSnackbar("Please fill all fields", "error");
       return;
     }
-
     setLoading(true);
     try {
       const newRole = await createUserRole({
-        name: newRoleForm.name,
         userType: newRoleForm.userType,
-        description: "",
-        permissionObject: defaultPermissions
+        description: newRoleForm.description,
+        permissionObject: getSelectedPermissions(),
       });
-      
-      await createUserAccess({
-        userType: newRoleForm.userType,
-        description: "",
-        permissionObject: defaultPermissions
-      });
-      
       await loadData();
-      setSelectedRole(newRole.name);
+      setSelectedRole(String(newRole.userType));
       showSnackbar("New role created successfully!", "success");
       setNewRoleDialog(false);
-    } catch (error) {
+    } catch {
       showSnackbar("Failed to create role", "error");
     } finally {
       setLoading(false);
@@ -206,42 +195,85 @@ const UserAccessManagementSystem = () => {
 
   const handleDelete = async () => {
     if (!selectedRoleId || !window.confirm("Are you sure you want to delete this role?")) return;
-    
     setLoading(true);
     try {
       await deleteUserRole(selectedRoleId);
       await loadData();
       showSnackbar("Role deleted successfully!", "success");
-    } catch (error) {
+    } catch {
       showSnackbar("Failed to delete role", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Update the renderPermissionSection to handle undefined permissions safely
-  const renderPermissionSection = (title: string, keys: PermissionKey[]) => (
-    <Grid item xs={12} md={4}>
-      <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>{title}</Typography>
-      <FormGroup>
-        {keys.map(key => (
-          <FormControlLabel
-            key={key}
-            control={
-              <Checkbox 
-                checked={permissions ? permissions[key] || false : false}
-                onChange={handlePermissionChange(key)}
-                disabled={loading}
-              />
-            }
-            label={key.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase())}
+  const renderCheckbox = (key: PermissionKey, label: string, bold: boolean = false, indented: boolean = false) => (
+    <FormControlLabel
+      key={key}
+      control={
+        <Checkbox 
+          checked={permissions ? permissions[key] || false : false}
+          onChange={handlePermissionChange(key)}
+          disabled={loading}
+        />
+      }
+      label={
+        <Typography variant="body1" sx={{ fontWeight: bold ? 'bold' : 'normal' }}>
+          {label}
+        </Typography>
+      }
+      sx={{ 
+        ml: indented ? 4 : 2,
+        '& .MuiFormControlLabel-label': {
+          fontSize: '0.875rem',
+          color: theme.palette.text.secondary
+        }
+      }}
+    />
+  );
+
+  const renderParentCheckbox = (
+    parentKey: PermissionKey, 
+    parentLabel: string, 
+    childKeys: PermissionKey[], 
+    childLabels: string[]
+  ) => (
+    <Box key={parentKey} sx={{ mb: 1 }}>
+      <FormControlLabel
+        control={
+          <Checkbox 
+            checked={permissions ? permissions[parentKey] || false : false}
+            onChange={handleParentPermissionChange(parentKey, childKeys)}
+            disabled={loading}
           />
-        ))}
-      </FormGroup>
+        }
+        label={<Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{parentLabel}</Typography>}
+        sx={{ ml: 2 }}
+      />
+      <Box sx={{ display: 'flex', flexDirection: 'column', ml: 2 }}>
+        {childKeys.map((childKey, index) => 
+          renderCheckbox(childKey, childLabels[index], false, true)
+        )}
+      </Box>
+    </Box>
+  );
+
+  const renderPermissionSection = (title: string, content: React.ReactNode) => (
+    <Grid item xs={12} md={6}>
+      <Typography variant="h6" sx={{ 
+        fontWeight: "bold", 
+        mb: 2, 
+        color: theme.palette.primary.main,
+        pl: 2
+      }}>
+        {title}
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {content}
+      </Box>
     </Grid>
   );
 
-  // Add error display to the UI
   return (
     <Box sx={{ display: "flex", width: "100vw", minHeight: "100vh" }}>
       <CssBaseline />
@@ -268,14 +300,14 @@ const UserAccessManagementSystem = () => {
           </Box>
         ) : (
           <Box sx={{ p: 3 }}>
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
               <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
                 <Typography>User Role:</Typography>
                 <Select 
                   value={selectedRole} 
                   onChange={handleRoleChange} 
                   sx={{ minWidth: 200 }}
-                  disabled={loading || userTypes.length === 0}
+                  disabled={loading || roles.length === 0}
                 >
                   {roles.map(role => (
                     <MenuItem key={role.id} value={role.userType}>{role.userType}</MenuItem>
@@ -314,21 +346,37 @@ const UserAccessManagementSystem = () => {
               />
             </Paper>
 
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h5" sx={{ mb: 3 }}>Role Permissions</Typography>
               <Grid container spacing={3}>
-                {renderPermissionSection("Admin Panel Access", [
-                  "adminDashboard", "userManagement", "roleManagement", "systemSettings",
-                  "auditLogs", "backupRestore", "apiManagement", "reportGeneration", "dataExport", "systemMonitoring"
-                ])}
-                {renderPermissionSection("Home Dashboard Access", [
-                  "managerDashboard", "workOrderManagement", "teamManagement", "performanceReports",
-                  "inventoryView", "maintenanceScheduling", "costAnalysis", "kpiMonitoring", "documentManagement", "approvalWorkflows"
-                ])}
-                {renderPermissionSection("Other Settings", [
-                  "partsCatalog", "orderManagement", "deliveryTracking", "invoiceSubmission",
-                  "inventoryManagement", "contractView", "serviceRequests", "complianceDocuments", "performanceMetrics"
-                ])}
+                {renderPermissionSection("Admin Panel", (
+                  <>
+                    {renderCheckbox("homeDashboard", "Home Dashboard", true)}
+                    
+                    {renderParentCheckbox(
+                      "p2pSection",
+                      "P2P Section",
+                      ["productionDashboard", "productionUpdate", "dayPlanUpload", "dayPlanReports", "dayPlanSummary"],
+                      ["Production Dashboard", "Production Update", "Day plan upload", "Day plan Reports", "Day plan Summary"]
+                    )}
+                    
+                    {renderParentCheckbox(
+                      "userManagement",
+                      "User Management",
+                      ["userAccount", "userManagementSub", "userAccessManagement"],
+                      ["User account", "User Management", "User Access Management"]
+                    )}
+                    
+                    {renderCheckbox("systemManagement", "System Management", true)}
+                    {renderCheckbox("userProfile", "User profile", true)}
+                  </>
+                ))}
+
+                {renderPermissionSection("Other Settings", (
+                  <>
+                    {renderCheckbox("autoRefresh", "Auto Refresh Dashboard", true)}
+                  </>
+                ))}
               </Grid>
             </Paper>
           </Box>
@@ -355,9 +403,18 @@ const UserAccessManagementSystem = () => {
               <TextField
                 fullWidth
                 label="Role Name"
-                value={newRoleForm.name}
-                onChange={(e) => setNewRoleForm((prev: any) => ({ ...prev, name: e.target.value }))}
+                value={newRoleForm.userType}
+                onChange={(e) => setNewRoleForm(prev => ({ ...prev, userType: e.target.value }))}
                 disabled={loading}
+              />
+              <TextField
+                fullWidth
+                label="Description"
+                value={newRoleForm.description}
+                onChange={(e) => setNewRoleForm(prev => ({ ...prev, description: e.target.value }))}
+                disabled={loading}
+                multiline
+                minRows={2}
               />
             </Box>
           </DialogContent>

@@ -98,7 +98,6 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
       children: [
         { title: "User Account", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userProfile" },
         { title: "User Management", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userManagement" },
-        { title: "User Role Management", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userRoleManagement" },
         { title: "User Access Management", icon: <SubdirectoryArrowRight fontSize="small" />, href: "/userAccessManagement" },
       ],
     },
