@@ -40,7 +40,14 @@ import {
   fetchSizeData,
   fetchCheckPointData,
   fetchTeamData,
-  fetchBuyerDetails
+  fetchBuyerDetails,
+  fetchPartLocationOptions,
+  saveProductionUpdate,
+  saveHourlyCount,
+  fetchSuccessCount,
+  fetchReworkCount,
+  fetchDefectCount,
+  fetchHourlySuccess,
 } from '../../api/productionApi';
 import { Controller, useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
@@ -149,19 +156,22 @@ const ProductionUpdatePage = () => {
   };
 
   // Only update counts/hourlyData, not header info!
-  const fetchProductionData = async (_filters: Filters) => {
+  const fetchProductionData = async (filters: Filters) => {
+    // Fetch all counts and hourly data from backend
+    const [successCount, reworkCount, defectCount, hourlyData] = await Promise.all([
+      fetchSuccessCount(filters),
+      fetchReworkCount(filters),
+      fetchDefectCount(filters),
+      fetchHourlySuccess(filters),
+    ]);
     return {
-      reworkCount: 0,
-      successCount: 0,
-      defectCount: 0,
-      hourlyData: [0, 0, 0, 0, 0, 0, 0, 0]
+      successCount,
+      reworkCount,
+      defectCount,
+      hourlyData,
     };
   };
 
-  const submitDefectRework = async (type: 'rework' | 'defect', data: any, filters: Filters) => {
-    console.log(`Submitting ${type}`, data, filters);
-    return true;
-  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -189,8 +199,18 @@ const ProductionUpdatePage = () => {
     const loadDefectReworkOptions = async () => {
       try {
         setLoading(prev => ({ ...prev, defectReworkOptions: true }));
-        const options = await fetchDefectReworkOptions();
-        setDefectReworkOptions(options);
+        const [defectOptions, partLocationOptions] = await Promise.all([
+          fetchDefectReworkOptions(),
+          fetchPartLocationOptions()
+        ]);
+        // Extract unique parts and locations
+        const parts = Array.from(new Set(partLocationOptions.partLocations.map((item: any) => item.part))) as string[];
+        const locations = Array.from(new Set(partLocationOptions.partLocations.map((item: any) => item.location))) as string[];
+        setDefectReworkOptions({
+          parts,
+          locations,
+          defectCodes: defectOptions.defectCodes
+        });
       } catch (error) {
         console.error('Error loading defect/rework options:', error);
         showSnackbar('Failed to load defect/rework options', 'error');
@@ -212,7 +232,7 @@ const ProductionUpdatePage = () => {
         const productionData = await fetchProductionData(filters);
         setData(prev => ({
           ...prev,
-          ...productionData // Only updates counts/hourlyData, keeps buyer/gg/smv/presentCarder
+          ...productionData // Now updates counts/hourlyData from backend
         }));
       } catch (error) {
         console.error('Error loading production data:', error);
@@ -240,25 +260,70 @@ const ProductionUpdatePage = () => {
     setFormData({ part: '', location: '', defectCode: '' });
   };
 
-  const handleSubmit = async (type: 'rework' | 'defect') => {
+  // Success handler
+  const handleSuccessClick = async () => {
     try {
       setLoading(prev => ({ ...prev, submit: true }));
-      await submitDefectRework(type, formData, filters);
-      showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} submitted successfully`, 'success');
-      handleDialogClose(type);
-
-      // Refresh production data
-      const productionData = await fetchProductionData(filters);
-      setData(prev => ({
-        ...prev,
-        ...productionData
-      }));
+      await saveProductionUpdate({
+        filters,
+        data,
+        qualityState: "Success"
+      });
+      await saveHourlyCount({ filters, qualityState: "Success" });
+      showSnackbar("Success submitted", "success");
+      // Update both total and hourly count for Success
+      updateHourlyCount("successCount");
     } catch (error) {
-      console.error(`Error submitting ${type}:`, error);
-      showSnackbar(`Failed to submit ${type}`, 'error');
+      showSnackbar("Failed to submit success", "error");
     } finally {
       setLoading(prev => ({ ...prev, submit: false }));
     }
+  };
+
+  // Rework/Defect submit handler
+  const handleSubmit = async (type: 'rework' | 'defect') => {
+    try {
+      setLoading(prev => ({ ...prev, submit: true }));
+      await saveProductionUpdate({
+        filters,
+        data,
+        qualityState: type === "rework" ? "Rework" : "Defect",
+        part: formData.part,
+        location: formData.location,
+        defectCode: formData.defectCode
+      });
+      await saveHourlyCount({
+        filters,
+        qualityState: type === "rework" ? "Rework" : "Defect"
+      });
+      showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} submitted successfully`, 'success');
+      handleDialogClose(type);
+      // Only update the total count, not hourlyData
+      setData(prev => ({
+        ...prev,
+        [type === "rework" ? "reworkCount" : "defectCount"]: (prev[type === "rework" ? "reworkCount" : "defectCount"] || 0) + 1
+      }));
+    } catch (error) {
+      showSnackbar(`Failed to submit ${type}`, "error");
+    } finally {
+      setLoading(prev => ({ ...prev, submit: false }));
+    }
+  };
+
+  // Helper to update local hourly count (optional, for UI feedback)
+  const updateHourlyCount = (key: "successCount" | "reworkCount" | "defectCount") => {
+    setData(prev => {
+      const hourIdx = new Date().getHours() - 9; // adjust as needed
+      const newHourlyData = [...prev.hourlyData];
+      if (hourIdx >= 0 && hourIdx < newHourlyData.length) {
+        newHourlyData[hourIdx] = (newHourlyData[hourIdx] || 0) + 1;
+      }
+      return {
+        ...prev,
+        [key]: (prev[key] || 0) + 1,
+        hourlyData: newHourlyData
+      };
+    });
   };
 
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
@@ -515,7 +580,7 @@ const ProductionUpdatePage = () => {
                       value: data.successCount,
                       gradient: 'linear-gradient(to right, #00BA57, #006931)',
                       icon: <AssignmentTurnedIn sx={{ fontSize: 40, opacity: 0.8 }} />,
-                      onClick: null
+                      onClick: handleSuccessClick
                     },
                     {
                       title: 'Rework',
@@ -550,7 +615,7 @@ const ProductionUpdatePage = () => {
                           transition: 'transform 0.3s',
                           '&:hover': {
                             transform: 'scale(1.02)',
-                            cursor: status.onClick ? 'pointer' : 'default'
+                            cursor: typeof status.onClick === 'function' ? 'pointer' : 'default'
                           }
                         }}
                         onClick={status.onClick || undefined}
@@ -782,8 +847,6 @@ export default ProductionUpdatePage;
 export async function fetchDefectReworkOptions() {
   const res = await axios.get("/api/all-defects");
   return {
-    parts: ['Sleeve', 'Collar', 'Front Panel', 'Back Panel'], // hardcoded sample parts
-    locations: ['Left', 'Right', 'Center', 'Bottom'],         // hardcoded sample locations
     defectCodes: res.data.map((item: any) => item.defectCode),
   };
 }

@@ -597,7 +597,7 @@ const UserManagement: React.FC = () => {
             </Stack>
           </Paper>
 
-          <Paper sx={{ p: 2, borderRadius: 2, height: 'calc(100vh - 320px)' }}>
+          <Paper sx={{ p: 2, borderRadius: 2, height: 720 }}>
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
