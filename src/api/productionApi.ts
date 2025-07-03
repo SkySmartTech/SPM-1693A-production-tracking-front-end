@@ -1,5 +1,6 @@
 import axios from "axios";
 import { z } from "zod";
+import dayjs from "dayjs";
 
 export const productionSchema = z.object({
   id: z.string(),
@@ -45,8 +46,167 @@ export async function fetchBuyerDetails(lineNo: string) {
 export async function fetchDefectReworkOptions() {
   const res = await axios.get("/api/all-defects");
   return {
-    parts: [], 
-    locations: [], 
     defectCodes: res.data.map((item: any) => item.defectCode),
   };
+}
+
+export async function fetchPartLocationOptions() {
+  const res = await axios.get("/api/all-part-locations");
+  return {
+    partLocations: res.data.map((item: any) => ({
+      part: item.part,
+      location: item.location,
+    })),
+  };
+}
+
+// Save production update (Success, Rework, Defect)
+export async function saveProductionUpdate({
+  filters,
+  data,
+  qualityState,
+  part = "",
+  location = "",
+  defectCode = ""
+}: {
+  filters: {
+    teamNo: string;
+    style: string;
+    color: string;
+    size: string;
+    checkPoint: string;
+  };
+  data: {
+    buyer: string;
+    gg: string;
+    smv: string;
+    presentCarder: string;
+  };
+  qualityState: "Success" | "Rework" | "Defect";
+  part?: string;
+  location?: string;
+  defectCode?: string;
+}) {
+  const body = {
+    serverDateTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+    lineNo: filters.teamNo,
+    QRCode: "QR1002", // Replace with actual QR code if available
+    buyer: data.buyer,
+    gg: data.gg,
+    smv: Number(data.smv),
+    presentCarder: Number(data.presentCarder),
+    style: filters.style,
+    color: filters.color,
+    sizeName: filters.size,
+    checkPoint: filters.checkPoint,
+    qualityState,
+    part,
+    location,
+    defectCode,
+    state: 1
+  };
+  return axios.post("/api/production-update", body);
+}
+
+// Save hourly count
+export async function saveHourlyCount({
+  filters,
+  qualityState
+}: {
+  filters: {
+    teamNo: string;
+    style: string;
+    color: string;
+    size: string;
+    checkPoint: string;
+  };
+  qualityState: "Success" | "Rework" | "Defect";
+}) {
+  const params = {
+    serverDateTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+    lineNo: filters.teamNo,
+    style: filters.style,
+    color: filters.color,
+    sizeName: filters.size,
+    checkPoint: filters.checkPoint,
+    qualityState
+  };
+  return axios.get("/api/hourly-success", { params });
+}
+
+// Fetch total success count
+export async function fetchSuccessCount(filters: {
+  teamNo: string;
+  style: string;
+  color: string;
+  size: string;
+  checkPoint: string;
+}) {
+  const params = {
+    lineNo: filters.teamNo,
+    style: filters.style,
+    color: filters.color,
+    sizeName: filters.size,
+    checkPoint: filters.checkPoint,
+  };
+  const res = await axios.get("/api/production-success", { params });
+  return res.data.count ?? 0;
+}
+
+// Fetch total rework count
+export async function fetchReworkCount(filters: {
+  teamNo: string;
+  style: string;
+  color: string;
+  size: string;
+  checkPoint: string;
+}) {
+  const params = {
+    lineNo: filters.teamNo,
+    style: filters.style,
+    color: filters.color,
+    sizeName: filters.size,
+    checkPoint: filters.checkPoint,
+  };
+  const res = await axios.get("/api/production-rework", { params });
+  return res.data.count ?? 0;
+}
+
+// Fetch total defect count
+export async function fetchDefectCount(filters: {
+  teamNo: string;
+  style: string;
+  color: string;
+  size: string;
+  checkPoint: string;
+}) {
+  const params = {
+    lineNo: filters.teamNo,
+    style: filters.style,
+    color: filters.color,
+    sizeName: filters.size,
+    checkPoint: filters.checkPoint,
+  };
+  const res = await axios.get("/api/production-defect", { params });
+  return res.data.count ?? 0;
+}
+
+// Fetch hourly success data
+export async function fetchHourlySuccess(filters: {
+  teamNo: string;
+  style: string;
+  color: string;
+  size: string;
+  checkPoint: string;
+}) {
+  const params = {
+    lineNo: filters.teamNo,
+    style: filters.style,
+    color: filters.color,
+    sizeName: filters.size,
+    checkPoint: filters.checkPoint,
+  };
+  const res = await axios.get("/api/hourly-success", { params });
+  // Expecting res.data.hourlyData to be an array of 8 numbers
+  return res.data.hourlyData ?? [0,0,0,0,0,0,0,0];
 }
