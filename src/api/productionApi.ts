@@ -90,7 +90,7 @@ export async function saveProductionUpdate({
   const body = {
     serverDateTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     lineNo: filters.teamNo,
-    QRCode: "QR1002", // Replace with actual QR code if available
+    QRCode: "QR142", 
     buyer: data.buyer,
     gg: data.gg,
     smv: Number(data.smv),
