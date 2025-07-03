@@ -9,26 +9,56 @@ const api = axios.create({
 
 // Session timeout variables
 let inactivityTimer: NodeJS.Timeout;
-const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
+const SESSION_TIMEOUT = 15 * 60 * 1000; 
+let isUserActive = true;
+
+// Enhanced activity detection
+function detectUserActivity() {
+  isUserActive = true;
+  resetInactivityTimer();
+}
 
 // Function to reset the inactivity timer
 function resetInactivityTimer() {
+  if (!isUserActive) return;
+  
   clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => {
-    // Logout user when timer expires
-    logout();
-    // Redirect to login page
-    window.location.href = '/login';
+    isUserActive = false;
+    // Give one last chance to detect activity before logging out
+    const finalCheckTimer = setTimeout(() => {
+      if (!isUserActive) {
+        logout();
+        window.location.href = '/login';
+      }
+    }, 5000); 
+    
+    // Reset if activity detected during grace period
+    window.addEventListener('mousemove', () => {
+      clearTimeout(finalCheckTimer);
+      isUserActive = true;
+      resetInactivityTimer();
+    }, { once: true });
   }, SESSION_TIMEOUT);
 }
 
 // Function to setup activity listeners
 function setupActivityListeners() {
-  // Listen for user activity events
-  const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+  // Listen for various user activity events
+  const events = [
+    'mousedown', 'mousemove', 'keypress', 'scroll', 
+    'touchstart', 'click', 'input', 'wheel'
+  ];
   
   events.forEach(event => {
-    window.addEventListener(event, resetInactivityTimer);
+    window.addEventListener(event, detectUserActivity, { passive: true });
+  });
+  
+  // Special case for visibility changes
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      detectUserActivity();
+    }
   });
   
   // Initialize the timer
@@ -60,12 +90,13 @@ export async function login({
   return res.data;
 }
 
-// Logout function
+// Logout function (unchanged)
 export async function logout() {
   const token = localStorage.getItem('token');
   
   // Clear the inactivity timer
   clearTimeout(inactivityTimer);
+  isUserActive = false;
 
   if (!token) return;
 
@@ -83,7 +114,7 @@ export async function logout() {
   }
 }
 
-// Validate user session
+// Validate user session (unchanged)
 export async function validateUser() {
   const token = localStorage.getItem('token');
   if (!token) return null;
@@ -98,7 +129,7 @@ export async function validateUser() {
     if (response.data.user) {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       // Reset activity timer on validation
-      resetInactivityTimer();
+      detectUserActivity();
       return response.data.user;
     }
     return null;
@@ -112,7 +143,7 @@ export async function validateUser() {
   }
 }
 
-// Add request interceptor to add token to all requests
+// Add request interceptor to add token to all requests (unchanged)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -130,7 +161,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // Reset activity timer on successful API responses
-    resetInactivityTimer();
+    detectUserActivity();
     return response;
   },
   async (error) => {
@@ -139,6 +170,7 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         clearTimeout(inactivityTimer);
+        isUserActive = false;
         window.location.href = '/login';
       }
     }
@@ -146,6 +178,7 @@ api.interceptors.response.use(
   }
 );
 
+// Utility functions (unchanged)
 export function isAuthenticated(): boolean {
   return !!localStorage.getItem('token');
 }

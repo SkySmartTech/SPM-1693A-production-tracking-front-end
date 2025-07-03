@@ -87,7 +87,7 @@ const Dashboard = () => {
     if (autoRefreshEnabled) {
       intervalId = setInterval(() => {
         fetchData();
-      }, 120000); // 2 minutes in milliseconds
+      }, 60000); 
     }
 
     return () => {
