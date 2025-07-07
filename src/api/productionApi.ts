@@ -39,7 +39,7 @@ export async function fetchCheckPointData() {
 }
 
 export async function fetchBuyerDetails(lineNo: string) {
-  const res = await axios.post("/api/get-buyer", { lineNo });
+  const res = await axios.post("/api/get-production-data", {lineNo });
   return res.data;
 }
 
@@ -90,7 +90,6 @@ export async function saveProductionUpdate({
   const body = {
     serverDateTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     lineNo: filters.teamNo,
-    
     buyer: data.buyer,
     gg: data.gg,
     smv: Number(data.smv),
@@ -122,7 +121,7 @@ export async function saveHourlyCount({
   };
   qualityState: "Success" | "Rework" | "Defect";
 }) {
-  const params = {
+  const body = {
     serverDateTime: dayjs().format("YYYY-MM-DD HH:mm:ss"),
     lineNo: filters.teamNo,
     style: filters.style,
@@ -131,7 +130,7 @@ export async function saveHourlyCount({
     checkPoint: filters.checkPoint,
     qualityState
   };
-  return axios.get("/api/hourly-success", { params });
+  return axios.post("/api/production-update", body);
 }
 
 // Fetch total success count
@@ -149,11 +148,10 @@ export async function fetchSuccessCount(filters: {
     sizeName: filters.size,
     checkPoint: filters.checkPoint,
   };
-  const res = await axios.get("/api/production-success", { params });
+  const res = await axios.post("/api/get-production-data", params);
   return res.data.count ?? 0;
 }
 
-// Fetch total rework count
 export async function fetchReworkCount(filters: {
   teamNo: string;
   style: string;
@@ -168,11 +166,10 @@ export async function fetchReworkCount(filters: {
     sizeName: filters.size,
     checkPoint: filters.checkPoint,
   };
-  const res = await axios.get("/api/production-rework", { params });
+  const res = await axios.post("/api/get-production-data", params);
   return res.data.count ?? 0;
 }
 
-// Fetch total defect count
 export async function fetchDefectCount(filters: {
   teamNo: string;
   style: string;
@@ -187,7 +184,7 @@ export async function fetchDefectCount(filters: {
     sizeName: filters.size,
     checkPoint: filters.checkPoint,
   };
-  const res = await axios.get("/api/production-defect", { params });
+  const res = await axios.post("/api/get-production-data", params);
   return res.data.count ?? 0;
 }
 
@@ -206,7 +203,7 @@ export async function fetchHourlySuccess(filters: {
     sizeName: filters.size,
     checkPoint: filters.checkPoint,
   };
-  const res = await axios.get("/api/hourly-success", { params });
+  const res = await axios.post("/api/get-production-data", params);
   // Expecting res.data.hourlyData to be an array of 8 numbers
   return res.data.hourlyData ?? [0,0,0,0,0,0,0,0];
 }
