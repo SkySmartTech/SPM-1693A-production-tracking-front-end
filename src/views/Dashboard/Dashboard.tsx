@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   AppBar,
   Typography,
@@ -9,16 +9,17 @@ import {
   CircularProgress,
   Divider,
   CssBaseline,
-  useTheme,
-  Alert,
-} from "@mui/material";
-import axios from "axios";
+  useTheme} from "@mui/material";
 import Sidebar from "../../components/Sidebar";
-import { dashboardInfo } from "../../data/dashboardInfo";
-import { DashboardData, dashboardData as mockData } from "../../data/dashboardData";
 import { useCustomTheme } from "../../context/ThemeContext";
+import {
+  DashboardData,
+  fetchAllLines,
+  fetchLineData,
+  mapDashboardData,
+  fallbackDashboardData
+} from "../../api/dashboardApi";
 import Navbar from "../../components/Navbar";
-import { checkUserPermission } from "../../api/userAccessmanagementApi";
 
 const Dashboard = () => {
   const [] = useState(false);
@@ -27,81 +28,88 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
-  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
-  const [, setRefreshCount] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [] = useState<null | HTMLElement>(null);
+  const [] = useState<null | HTMLElement>(null);
+  const [] = useState(3);
+  const [lines, setLines] = useState<any[]>([]);
+  const [selectedLine, setSelectedLine] = useState<string>("");
   const theme = useTheme();
   useCustomTheme();
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      // Replace with your actual API endpoint
-      const response = await axios.get("http://your-backend-api.com/dashboard-data", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`
+  // Fetch all lines on component mount
+  useEffect(() => {
+    const fetchLines = async () => {
+      try {
+        const linesData = await fetchAllLines();
+        setLines(linesData);
+        if (linesData.length > 0) {
+          setSelectedLine(linesData[0].lineNo);
         }
-      });
-      setDashboardData(response.data);
-      setHourlyData(response.data.hourly || []);
-
-      // For demo purposes, still use mock data
-      setDashboardData(mockData);
-      setHourlyData([56, 45, 60, 55, 48, 52, 49, 51]);
-      setError(null);
-      setRefreshCount(prev => prev + 1);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      setDashboardData(mockData);
-      setHourlyData([0, 0, 0, 0, 0, 0, 0, 0]);
-      setError("Failed to fetch dashboard data");
-    } finally {
-      setLoading(false);
-    }
+      } catch (error) {
+        console.error("Error fetching lines:", error);
+        setLines([]);
+      }
+    };
+    fetchLines();
   }, []);
 
+  // Fetch data when selected line changes
   useEffect(() => {
-    // Initial data fetch
-    fetchData();
+    if (!selectedLine) return;
 
-    // Check auto refresh permission
-    const checkPermissions = async () => {
+    const fetchData = async () => {
       try {
-        const hasPermission = await checkUserPermission("autoRefresh");
-        setAutoRefreshEnabled(hasPermission);
+        setLoading(true);
+        let lineData = await fetchLineData(selectedLine);
+        if (Array.isArray(lineData)) {
+          lineData = lineData[0];
+        }
+        const mappedData = mapDashboardData(lineData);
+        setDashboardData(mappedData);
+        setHourlyData([56, 45, 60, 55, 48, 52, 49, 51]); 
       } catch (error) {
-        console.error("Error checking permissions:", error);
-        setAutoRefreshEnabled(false);
+        console.error("Error fetching dashboard data:", error);
+        setDashboardData(fallbackDashboardData);
+        setHourlyData([0, 0, 0, 0, 0, 0, 0, 0]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkPermissions();
+    fetchData();
+    const intervalId = setInterval(fetchData, 30000);
+    return () => clearInterval(intervalId);
+  }, [selectedLine]);
 
-    return () => {
-    };
-  }, [fetchData]);
 
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
 
-    if (autoRefreshEnabled) {
-      intervalId = setInterval(() => {
-        fetchData();
-      }, 60000); 
-    }
 
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [autoRefreshEnabled, fetchData]);
+
+
+
+
+
+  const generateDashboardInfo = (): string[] => {
+    if (!selectedLine || lines.length === 0) return [];
+    const line = lines.find(l => l.lineNo === selectedLine);
+    if (!line) return [];
+
+    return [
+      `Team: ${line.lineNo}`,
+      `Buyer: ${line.buyer}`,
+      `Style: ${line.style}`,
+      `Gauge: ${line.gg}`,
+      `SMV: ${line.smv}`,
+      `Carder: ${line.availableCarder}`,
+      `WH/RH: ${line.actualWH}`
+    ];
+  };
 
   return (
     <Box sx={{ display: "flex", width: "100%", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
-      <Sidebar
-        open={sidebarOpen || hovered}
-        setOpen={setSidebarOpen}
-      />
+      <Sidebar open={sidebarOpen || hovered} setOpen={setSidebarOpen} />
+
       <Box component="main" sx={{ flexGrow: 1 }}>
         <AppBar
           position="static"
@@ -121,18 +129,6 @@ const Dashboard = () => {
         </AppBar>
 
         <Box sx={{ p: 2 }}>
-          {autoRefreshEnabled && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Auto-refresh enabled (every 2 minutes). Last refreshed: {new Date().toLocaleTimeString()}
-            </Alert>
-          )}
-          
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
           <Stack spacing={2} sx={{ my: 1 }}>
             <Card sx={{ p: 0, textAlign: "center", borderRadius: "8px", boxShadow: 1 }}>
               <CardContent>
@@ -146,8 +142,8 @@ const Dashboard = () => {
                     py: 1
                   }}
                 >
-                  {dashboardInfo.map((info, index) => (
-                    <Typography key={index} variant="body1" fontWeight="bold">
+                  {generateDashboardInfo().map((info, index) => (
+                    <Typography key={`info-${index}`} variant="body1" fontWeight="bold">
                       {info}
                     </Typography>
                   ))}
@@ -190,7 +186,7 @@ const Dashboard = () => {
 
                 return (
                   <Box
-                    key={item.id}
+                    key={`card-${item.id}`}
                     sx={{
                       ...currentStyles,
                       minHeight: 0
@@ -235,7 +231,7 @@ const Dashboard = () => {
                           color: theme.palette.text.primary,
                           p: 1,
                           textAlign: "center",
-                          flex: isLargeBox ? 0.5 : 0.5,
+                          flex: isLargeBox ? 0.8 : 0.5,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -265,7 +261,7 @@ const Dashboard = () => {
           >
             {hourlyData.map((value, index) => (
               <Box
-                key={index}
+                key={`hour-${index}`}
                 sx={{
                   width: { xs: '100%', sm: 'calc(50% - 16px)', md: 'calc(16.66% - 16px)' },
                 }}
