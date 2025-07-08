@@ -232,7 +232,7 @@ const ProductionUpdatePage = () => {
         const productionData = await fetchProductionData(filters);
         setData(prev => ({
           ...prev,
-          ...productionData // Now updates counts/hourlyData from backend
+          ...productionData
         }));
       } catch (error) {
         console.error('Error loading production data:', error);
@@ -369,23 +369,21 @@ const ProductionUpdatePage = () => {
     field.onChange(newValue);
     if (newValue) {
       const details = await fetchBuyerDetails(newValue);
-      if (details) {
-        // Update filters and data state
+      if (details && details.dayPlan) {
         setFilters(prev => ({
           ...prev,
           teamNo: newValue,
-          style: details.style || "",
+          style: details.dayPlan.style || "",
         }));
         setData(prev => ({
           ...prev,
-          buyer: details.buyer || "",
-          gg: details.gg || "",
-          smv: details.smv?.toString() || "",
-          presentCarder: details.availableCader?.toString() || "",
+          buyer: details.dayPlan.buyer || "",
+          gg: details.dayPlan.gg || "",
+          smv: details.dayPlan.smv?.toString() || "",
+          presentCarder: details.dayPlan.availableCader?.toString() || "",
         }));
-        // Optionally update react-hook-form values for style
-        if (details.style) {
-          setValue("style", details.style);
+        if (details.dayPlan.style) {
+          setValue("style", details.dayPlan.style);
         }
       }
     }
@@ -502,7 +500,13 @@ const ProductionUpdatePage = () => {
                   render={({ field }) => (
                     <Autocomplete
                       {...field}
-                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      onChange={(_event, newValue) => {
+                        field.onChange(newValue);
+                        setFilters(prev => ({
+                          ...prev,
+                          color: newValue || "",
+                        }));
+                      }}
                       size="small"
                       options={colorData?.map(color => color.color) || []}
                       sx={{ flex: 1, margin: "0.5rem" }}
@@ -525,7 +529,13 @@ const ProductionUpdatePage = () => {
                   render={({ field }) => (
                     <Autocomplete
                       {...field}
-                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      onChange={(_event, newValue) => {
+                        field.onChange(newValue);
+                        setFilters(prev => ({
+                          ...prev,
+                          size: newValue || "",
+                        }));
+                      }}
                       size="small"
                       options={sizeData?.map(size => size.sizeName) || []}
                       sx={{ flex: 1, margin: "0.5rem" }}
@@ -548,7 +558,13 @@ const ProductionUpdatePage = () => {
                   render={({ field }) => (
                     <Autocomplete
                       {...field}
-                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      onChange={(_event, newValue) => {
+                        field.onChange(newValue);
+                        setFilters(prev => ({
+                          ...prev,
+                          checkPoint: newValue || "",
+                        }));
+                      }}
                       size="small"
                       options={checkPointData?.map(cp => cp.actual_column_name) || []}
                       sx={{ flex: 1, margin: "0.5rem" }}
