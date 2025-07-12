@@ -194,7 +194,8 @@ export async function fetchHourlySuccess(filters: {
   color: string;
   size: string;
   checkPoint: string;
-}) {
+})
+ {
   const params = {
     lineNo: filters.teamNo,
     style: filters.style,

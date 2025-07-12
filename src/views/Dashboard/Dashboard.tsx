@@ -20,6 +20,7 @@ import {
   DashboardData,
   fetchAllLines,
   fetchLineData,
+  fetchHourlyData,
   mapDashboardData,
   fallbackDashboardData,
   DashboardDataResponse
@@ -28,7 +29,9 @@ import Navbar from "../../components/Navbar";
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData[]>(fallbackDashboardData);
-  const [hourlyData, setHourlyData] = useState<number[]>([]);
+  const [hourlyData, setHourlyData] = useState<Record<string, number>>({
+    '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0
+  });
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hovered] = useState(false);
@@ -61,14 +64,20 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const lineData = await fetchLineData(selectedLine);
+        const [lineData, hourlySuccess] = await Promise.all([
+          fetchLineData(selectedLine),
+          fetchHourlyData(selectedLine)
+        ]);
+        
         const mappedData = mapDashboardData(lineData);
         setDashboardData(mappedData);
-        setHourlyData([56, 45, 60, 55, 48, 52, 49, 51]); // Static hourly data
+        setHourlyData(hourlySuccess);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         setDashboardData(fallbackDashboardData);
-        setHourlyData([0, 0, 0, 0, 0, 0, 0, 0]);
+        setHourlyData({
+          '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0
+        });
       } finally {
         setLoading(false);
       }
@@ -271,9 +280,9 @@ const Dashboard = () => {
             useFlexGap
             sx={{ width: '100%', mt: 3 }}
           >
-            {hourlyData.map((value, index) => (
+            {Object.entries(hourlyData).map(([hour, value]) => (
               <Box
-                key={`hour-${index}`}
+                key={`hour-${hour}`}
                 sx={{
                   width: { xs: '100%', sm: 'calc(50% - 16px)', md: 'calc(16.66% - 16px)' },
                 }}
@@ -284,13 +293,13 @@ const Dashboard = () => {
                     textAlign: 'center',
                     borderRadius: '8px',
                     boxShadow: 3,
-                    bgcolor: index < 4 ? '#00BA57' : index >= hourlyData.length - 4 ? '#78B3CE' : 'background.paper',
+                    bgcolor: parseInt(hour) < 5 ? '#00BA57' : '#78B3CE',
                     transition: 'transform 0.3s',
                     '&:hover': { transform: 'translateY(-5px)' }
                   }}
                 >
                   <Typography variant="subtitle2" color="textSecondary">
-                    HOUR: {index + 1}
+                    HOUR: {hour}
                   </Typography>
                   <Divider sx={{ my: 1 }} />
                   <Typography variant="h5">{value}</Typography>
