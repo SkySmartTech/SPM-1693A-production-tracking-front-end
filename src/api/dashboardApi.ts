@@ -50,7 +50,7 @@ export const fetchAllLines = async (): Promise<DashboardDataResponse[]> => {
 
 export const fetchLineData = async (lineNo: string): Promise<DashboardDataResponse> => {
   try {
-    const response = await axios.get(`/api/get-line?lineNo=${lineNo}`);
+    const response = await axios.get(`/api/get-all?lineNo=${lineNo}`);
     // Ensure we always return a single object (even if API returns an array)
     return Array.isArray(response.data) ? response.data[0] : response.data;
   } catch (error) {
