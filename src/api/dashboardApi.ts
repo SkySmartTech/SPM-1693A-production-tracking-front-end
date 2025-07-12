@@ -50,8 +50,9 @@ export const fetchAllLines = async (): Promise<DashboardDataResponse[]> => {
 
 export const fetchLineData = async (lineNo: string): Promise<DashboardDataResponse> => {
   try {
-    const response = await axios.get(`/api/get-all?lineNo=${lineNo}`);
-    return response.data;
+    const response = await axios.get(`/api/get-line?lineNo=${lineNo}`);
+    // Ensure we always return a single object (even if API returns an array)
+    return Array.isArray(response.data) ? response.data[0] : response.data;
   } catch (error) {
     console.error(`Error fetching line ${lineNo} data:`, error);
     throw error;
@@ -59,6 +60,8 @@ export const fetchLineData = async (lineNo: string): Promise<DashboardDataRespon
 };
 
 export const mapDashboardData = (data: DashboardDataResponse): DashboardData[] => {
+  if (!data) return fallbackDashboardData;
+
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const topDefects = data.top_defect_code || "None";
 
@@ -68,7 +71,7 @@ export const mapDashboardData = (data: DashboardDataResponse): DashboardData[] =
       value: `${data.performance_efi ?? 0}%`,
       title: "PERFORMANCE EFI",
       timestamp,
-      status: "active",
+      status: data.performance_efi > 0 ? "active" : "inactive",
       metrics: []
     },
     {
@@ -82,7 +85,7 @@ export const mapDashboardData = (data: DashboardDataResponse): DashboardData[] =
       id: "3",
       value: `${data.hourlyTargetAchieve ?? 0}/${data.perHourTarget ?? 0}`,
       title: "HOURLY TARGET/ACHIEVE",
-      status: "active",
+      status: data.hourlyTargetAchieve > 0 ? "active" : "inactive",
       metrics: []
     },
     {
