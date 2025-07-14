@@ -38,6 +38,10 @@ export interface DashboardData {
   status?: "active" | "inactive";
 }
 
+export interface HourlySuccessResponse {
+  [key: string]: number;
+}
+
 export const fetchAllLines = async (): Promise<DashboardDataResponse[]> => {
   try {
     const response = await axios.get("/api/get-all");
@@ -51,14 +55,53 @@ export const fetchAllLines = async (): Promise<DashboardDataResponse[]> => {
 export const fetchLineData = async (lineNo: string): Promise<DashboardDataResponse> => {
   try {
     const response = await axios.get(`/api/get-all?lineNo=${lineNo}`);
-    return response.data;
+    return Array.isArray(response.data) ? response.data[0] : response.data;
   } catch (error) {
     console.error(`Error fetching line ${lineNo} data:`, error);
     throw error;
   }
 };
 
+export const fetchHourlyData = async (lineNo: string): Promise<Record<string, number>> => {
+  try {
+    const params = {
+      lineNo: lineNo,
+      style: "",
+      color: "",
+      sizeName: "",
+      checkPoint: "",
+    };
+    const res = await axios.post("/api/get-production-data", params);
+    
+    const hourlyData = res.data.hourlySuccess || res.data.hourlyData;
+    
+    if (Array.isArray(hourlyData)) {
+      return {
+        '1': hourlyData[0] || 0,
+        '2': hourlyData[1] || 0,
+        '3': hourlyData[2] || 0,
+        '4': hourlyData[3] || 0,
+        '5': hourlyData[4] || 0,
+        '6': hourlyData[5] || 0,
+        '7': hourlyData[6] || 0,
+        '8': hourlyData[7] || 0,
+      };
+    }
+    
+    return hourlyData || {
+      '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0
+    };
+  } catch (error) {
+    console.error("Error fetching hourly data:", error);
+    return {
+      '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0
+    };
+  }
+};
+
 export const mapDashboardData = (data: DashboardDataResponse): DashboardData[] => {
+  if (!data) return fallbackDashboardData;
+
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const topDefects = data.top_defect_code || "None";
 
@@ -68,7 +111,7 @@ export const mapDashboardData = (data: DashboardDataResponse): DashboardData[] =
       value: `${data.performance_efi ?? 0}%`,
       title: "PERFORMANCE EFI",
       timestamp,
-      status: "active",
+      status: data.performance_efi > 0 ? "active" : "inactive",
       metrics: []
     },
     {
@@ -82,7 +125,7 @@ export const mapDashboardData = (data: DashboardDataResponse): DashboardData[] =
       id: "3",
       value: `${data.hourlyTargetAchieve ?? 0}/${data.perHourTarget ?? 0}`,
       title: "HOURLY TARGET/ACHIEVE",
-      status: "active",
+      status: data.hourlyTargetAchieve > 0 ? "active" : "inactive",
       metrics: []
     },
     {

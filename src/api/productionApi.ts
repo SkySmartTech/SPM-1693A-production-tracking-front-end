@@ -14,44 +14,44 @@ export const productionSchema = z.object({
 export type Production = z.infer<typeof productionSchema>;
 
 export async function fetchTeamData() {
-  const res = await axios.get("/api/all-day-plans");
+  const res = await axios.get("/api/day-plan/team-no");
   return res.data;
 }
 
-export async function fetchColorData() {
-  const res = await axios.get("/api/all-colors");
+export async function fetchColorData(lineNo: string) {
+  const res = await axios.get(`/api/all-colors?lineNo=${lineNo}`);
   return res.data;
 }
 
-export async function fetchStyleData() {
-  const res = await axios.get("/api/all-day-plans");
+export async function fetchStyleData(lineNo: string) {
+  const res = await axios.get(`/api/all-day-plans?lineNo=${lineNo}`);
   return res.data;
 }
 
-export async function fetchSizeData() {
-  const res = await axios.get("/api/all-sizes");
+export async function fetchSizeData(lineNo: string) {
+  const res = await axios.get(`/api/all-sizes?lineNo=${lineNo}`);
   return res.data;
 }
 
-export async function fetchCheckPointData() {
-  const res = await axios.get("/api/all-check-points"); 
+export async function fetchCheckPointData(lineNo: string) {
+  const res = await axios.get(`/api/all-check-points?lineNo=${lineNo}`);
   return res.data;
 }
 
 export async function fetchBuyerDetails(lineNo: string) {
-  const res = await axios.post("/api/get-production-data", {lineNo });
+  const res = await axios.post(`/api/get-production-data?lineNo=${lineNo}`);
   return res.data;
 }
 
-export async function fetchDefectReworkOptions() {
-  const res = await axios.get("/api/all-defects");
+export async function fetchDefectReworkOptions(lineNo: string) {
+  const res = await axios.get(`/api/all-defects?lineNo=${lineNo}`);
   return {
     defectCodes: res.data.map((item: any) => item.defectCode),
   };
 }
 
-export async function fetchPartLocationOptions() {
-  const res = await axios.get("/api/all-part-locations");
+export async function fetchPartLocationOptions(lineNo: string) {
+  const res = await axios.get(`/api/all-part-locations?lineNo=${lineNo}`);
   return {
     partLocations: res.data.map((item: any) => ({
       part: item.part,
@@ -60,7 +60,6 @@ export async function fetchPartLocationOptions() {
   };
 }
 
-// Save production update (Success, Rework, Defect)
 export async function saveProductionUpdate({
   filters,
   data,
@@ -104,10 +103,11 @@ export async function saveProductionUpdate({
     defectCode,
     state: 1
   };
-  return axios.post("/api/production-update", body);
+  
+  const res = await axios.post("/api/production-update", body);
+  return res.data;
 }
 
-// Save hourly count
 export async function saveHourlyCount({
   filters,
   qualityState
@@ -130,10 +130,10 @@ export async function saveHourlyCount({
     checkPoint: filters.checkPoint,
     qualityState
   };
-  return axios.post("/api/production-update", body);
+  const res = await axios.post("/api/get-production-data", body);
+  return res.data;
 }
 
-// Fetch total success count
 export async function fetchSuccessCount(filters: {
   teamNo: string;
   style: string;
@@ -148,8 +148,8 @@ export async function fetchSuccessCount(filters: {
     sizeName: filters.size,
     checkPoint: filters.checkPoint,
   };
-  const res = await axios.post("/api/get-production-data", params);
-  return res.data.count ?? 0;
+  const res = await axios.post("/api/get-success-count", params);
+  return res.data.successCount ?? 0;
 }
 
 export async function fetchReworkCount(filters: {
@@ -166,8 +166,8 @@ export async function fetchReworkCount(filters: {
     sizeName: filters.size,
     checkPoint: filters.checkPoint,
   };
-  const res = await axios.post("/api/get-production-data", params);
-  return res.data.count ?? 0;
+  const res = await axios.post("/api/get-rework-count", params);
+  return res.data.reworkCount ?? 0;
 }
 
 export async function fetchDefectCount(filters: {
@@ -184,18 +184,18 @@ export async function fetchDefectCount(filters: {
     sizeName: filters.size,
     checkPoint: filters.checkPoint,
   };
-  const res = await axios.post("/api/get-production-data", params);
-  return res.data.count ?? 0;
+  const res = await axios.post("/api/get-defect-count", params);
+  return res.data.defectCount ?? 0;
 }
 
-// Fetch hourly success data
 export async function fetchHourlySuccess(filters: {
   teamNo: string;
   style: string;
   color: string;
   size: string;
   checkPoint: string;
-}) {
+})
+ {
   const params = {
     lineNo: filters.teamNo,
     style: filters.style,
@@ -203,7 +203,24 @@ export async function fetchHourlySuccess(filters: {
     sizeName: filters.size,
     checkPoint: filters.checkPoint,
   };
-  const res = await axios.post("/api/get-production-data", params);
-  // Expecting res.data.hourlyData to be an array of 8 numbers
-  return res.data.hourlyData ?? [0,0,0,0,0,0,0,0];
+  const res = await axios.post("/api/get-hourly-success", params);
+  
+  const hourlyData = res.data.hourlySuccess || res.data.hourlyData;
+  
+  if (Array.isArray(hourlyData)) {
+    return {
+      '1': hourlyData[0] || 0,
+      '2': hourlyData[1] || 0,
+      '3': hourlyData[2] || 0,
+      '4': hourlyData[3] || 0,
+      '5': hourlyData[4] || 0,
+      '6': hourlyData[5] || 0,
+      '7': hourlyData[6] || 0,
+      '8': hourlyData[7] || 0,
+    };
+  }
+  
+  return hourlyData || {
+    '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0
+  };
 }
