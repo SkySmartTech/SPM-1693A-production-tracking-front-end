@@ -55,7 +55,7 @@ interface ProductionData {
   buyer: string;
   gg: string;
   smv: string;
-  presentCarder: string;
+  availableCader: string;
   reworkCount: number;
   successCount: number;
   defectCount: number;
@@ -76,7 +76,6 @@ interface DefectReworkData {
   defectCodes: string[];
 }
 
-
 interface StyleOption {
   style: any;
   sizeName: any;
@@ -92,7 +91,7 @@ const defaultProductionData: ProductionData = {
   buyer: 'N/A',
   gg: '0',
   smv: '0',
-  presentCarder: '0',
+  availableCader: '0',
   reworkCount: 0,
   successCount: 0,
   defectCount: 0,
@@ -142,8 +141,22 @@ const ProductionUpdatePage = () => {
     checkPoints: [] as string[]
   });
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [currentHour, setCurrentHour] = useState<number>(0);
   const theme = useTheme();
   useCustomTheme();
+
+  // Update current hour every minute
+  useEffect(() => {
+    const updateCurrentHour = () => {
+      const now = new Date();
+      setCurrentHour(now.getHours());
+    };
+
+    updateCurrentHour();
+    const interval = setInterval(updateCurrentHour, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchProductionData = async (teamNo: string) => {
     try {
@@ -155,7 +168,7 @@ const ProductionUpdatePage = () => {
         buyer: productionData.buyer || "N/A",
         gg: productionData.gg?.toString() || "0",
         smv: productionData.smv?.toString() || "0",
-        presentCarder: productionData.presentCarder?.toString() || "0",
+        availableCader: productionData.availableCader?.toString() || "0",
         successCount: responseData.successCount || 0,
         reworkCount: responseData.reworkCount || 0,
         defectCount: responseData.defectCount || 0,
@@ -179,7 +192,7 @@ const ProductionUpdatePage = () => {
   const loadDropdownOptions = async (teamNo: string) => {
     try {
       setLoading(prev => ({ ...prev, options: true }));
-      
+
       const [colors, styles, sizes, checkPoints] = await Promise.all([
         fetchColorData(teamNo),
         fetchStyleData(teamNo),
@@ -207,8 +220,7 @@ const ProductionUpdatePage = () => {
     if (newValue) {
       try {
         setLoading(prev => ({ ...prev, data: true }));
-        
-        // Clear all dropdowns first
+
         setFilters({
           teamNo: newValue,
           style: '',
@@ -221,14 +233,11 @@ const ProductionUpdatePage = () => {
         setValue("size", "");
         setValue("checkPoint", "");
 
-        // Load dropdown options for this team
         await loadDropdownOptions(newValue);
 
-        // Fetch production data for the selected team
         const productionStats = await fetchProductionData(newValue);
         setData(productionStats);
 
-        // Fetch defect/rework options
         const [defectOptions, partLocationOptions] = await Promise.all([
           fetchDefectReworkOptions(newValue),
           fetchPartLocationOptions(newValue)
@@ -240,10 +249,9 @@ const ProductionUpdatePage = () => {
           defectCodes: defectOptions.defectCodes
         });
 
-        // Get default values for this team
         const details = await fetchBuyerDetails(newValue);
         const productionData = details.latestProductionData?.[0] || {};
-        
+
         const newFilters = {
           teamNo: newValue,
           style: productionData.style || "",
@@ -251,10 +259,9 @@ const ProductionUpdatePage = () => {
           size: productionData.sizeName || "",
           checkPoint: productionData.checkPoint || ""
         };
-        
+
         setFilters(newFilters);
-        
-        // Set form values if data exists
+
         if (productionData.style) setValue("style", productionData.style);
         if (productionData.color) setValue("color", productionData.color);
         if (productionData.sizeName) setValue("size", productionData.sizeName);
@@ -267,7 +274,6 @@ const ProductionUpdatePage = () => {
         setLoading(prev => ({ ...prev, data: false }));
       }
     } else {
-      // Clear everything if teamNo is cleared
       setFilters({
         teamNo: '',
         style: '',
@@ -290,8 +296,7 @@ const ProductionUpdatePage = () => {
       try {
         setLoading(prev => ({ ...prev, options: true }));
         const teams = await fetchTeamData();
-        
-        // Reset all data first
+
         setFilters({
           teamNo: '',
           style: '',
@@ -307,7 +312,6 @@ const ProductionUpdatePage = () => {
           checkPoints: []
         });
 
-        // Only set first team if teams exist, but don't load data yet
         if (teams.length > 0) {
           setFilters(prev => ({
             ...prev,
@@ -331,7 +335,7 @@ const ProductionUpdatePage = () => {
       const loadTeamData = async () => {
         try {
           setLoading(prev => ({ ...prev, data: true }));
-          await handleTeamNoChange(filters.teamNo, { onChange: () => {} });
+          await handleTeamNoChange(filters.teamNo, { onChange: () => { } });
         } catch (error) {
           console.error('Error loading team data:', error);
           showSnackbar('Failed to load team data', 'error');
@@ -339,7 +343,7 @@ const ProductionUpdatePage = () => {
           setLoading(prev => ({ ...prev, data: false }));
         }
       };
-      
+
       loadTeamData();
     }
   }, [initialLoadComplete, filters.teamNo]);
@@ -372,11 +376,10 @@ const ProductionUpdatePage = () => {
         qualityState: "Success"
       });
       await saveHourlyCount({ filters, qualityState: "Success" });
-      
-      // Refresh the counts after submission
+
       const updatedData = await fetchProductionData(filters.teamNo);
       setData(updatedData);
-      
+
       showSnackbar("Success submitted", "success");
     } catch (error) {
       showSnackbar("Failed to submit success", "error");
@@ -405,11 +408,10 @@ const ProductionUpdatePage = () => {
         filters,
         qualityState: type === "rework" ? "Rework" : "Defect"
       });
-      
-      // Refresh the counts after submission
+
       const updatedData = await fetchProductionData(filters.teamNo);
       setData(updatedData);
-      
+
       showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} submitted successfully`, 'success');
       handleDialogClose(type);
     } catch (error) {
@@ -437,6 +439,12 @@ const ProductionUpdatePage = () => {
     queryFn: fetchTeamData,
   });
 
+  // Working hours configuration (8am to 4pm)
+  const workingHours = {
+    start: 8,
+    end: 16
+  };
+
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
       <CssBaseline />
@@ -463,18 +471,18 @@ const ProductionUpdatePage = () => {
         </AppBar>
         <Box sx={{ p: 3, flexGrow: 1, overflow: "auto" }}>
           {loading.options ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '00px' }}>
               <CircularProgress size={60} />
               <Typography variant="h6" sx={{ ml: 2 }}>Loading initial data...</Typography>
             </Box>
           ) : (
             <Card sx={{ p: 3, borderRadius: '12px', boxShadow: 3 }}>
-              <Stack direction="row" spacing={3} sx={{ mb: 3 }}>
+              <Stack direction="row" spacing={25} sx={{ mb: 4 }}>
                 {[
                   { label: 'BUYER', value: data.buyer, icon: <Person /> },
                   { label: 'GG', value: data.gg, icon: <StyleIcon /> },
                   { label: 'SMV', value: data.smv, icon: <AssignmentTurnedIn /> },
-                  { label: 'PRESENT CARDER', value: data.presentCarder, icon: <Person /> }
+                  { label: 'PRESENT CARDER', value: data.availableCader, icon: <Person /> }
                 ].map((item, index) => (
                   <Box key={index} sx={{ width: { xs: '100%', sm: '25%' } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 4 }}>
@@ -490,7 +498,7 @@ const ProductionUpdatePage = () => {
                 ))}
               </Stack>
 
-              <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+              <Stack direction="row" spacing={2} sx={{ mb: 8 }}>
                 <Controller
                   control={control}
                   name="teamNo"
@@ -639,7 +647,7 @@ const ProductionUpdatePage = () => {
                   <CircularProgress size={40} />
                 </Box>
               ) : (
-                <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                <Stack direction="row" spacing={30} sx={{ mb: 5 }}>
                   {[
                     {
                       title: 'Success',
@@ -671,7 +679,7 @@ const ProductionUpdatePage = () => {
                           background: status.gradient,
                           color: 'white',
                           boxShadow: 3,
-                          height: 120,
+                          height: 130,
                           width: 300,
                           display: 'flex',
                           marginBottom: 5,
@@ -710,25 +718,39 @@ const ProductionUpdatePage = () => {
                 useFlexGap
                 sx={{ width: '100%', mt: 3 }}
               >
-                {Array.isArray(data.hourlyData) && data.hourlyData.map((value, index) => (
-                  <Box key={index} sx={{ width: { xs: '90%', sm: '48%', md: '23%', lg: '15%' } }}>
-                    <Box sx={{
-                      p: 2,
-                      textAlign: 'center',
-                      borderRadius: '8px',
-                      boxShadow: 3,
-                      bgcolor: '#78B3CE',
-                      transition: 'transform 0.3s',
-                      '&:hover': { transform: 'translateY(-5px)' }
-                    }}>
-                      <Typography variant="subtitle2" color="textSecondary">
-                        HOUR: {index + 1}
-                      </Typography>
-                      <Divider sx={{ my: 1 }} />
-                      <Typography variant="h5">{value}</Typography>
+                {Array.isArray(data.hourlyData) && data.hourlyData.map((value, index) => {
+                  const hourInDay = workingHours.start + index;
+                  const isPastHour = currentHour > hourInDay;
+                  const isCurrentHour = currentHour === hourInDay;
+
+                  return (
+                    <Box key={index} sx={{ width: { xs: '90%', sm: '48%', md: '23%', lg: '15%' } }}>
+                      <Box sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        borderRadius: '8px',
+                        boxShadow: 3,
+                        background: isPastHour
+                          ? 'linear-gradient(to right, #00BA57, #006931)' : isCurrentHour ? '#9fe0a2ff' : '#78B3CE',
+                        transition: 'transform 0.3s',
+                        '&:hover': { transform: 'translateY(-5px)' }
+                      }}>
+                        <Typography variant="subtitle2" color={isPastHour || isCurrentHour ? 'white' : 'textSecondary'}>
+                          HOUR: {index + 1}
+                        </Typography>
+                        <Divider sx={{ my: 1, bgcolor: isPastHour || isCurrentHour ? 'rgba(255,255,255,0.3)' : undefined }} />
+                        <Typography variant="h5" sx={{ color: isPastHour || isCurrentHour ? 'white' : undefined }}>
+                          {value}
+                        </Typography>
+                        {isCurrentHour && (
+                          <Typography variant="caption" display="block" sx={{ color: 'yellow' }}>
+                            Current
+                          </Typography>
+                        )}
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Stack>
             </Card>
           )}
