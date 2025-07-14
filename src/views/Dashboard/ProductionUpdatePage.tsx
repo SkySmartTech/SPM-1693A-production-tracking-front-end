@@ -42,12 +42,9 @@ import {
   fetchTeamData,
   fetchBuyerDetails,
   fetchPartLocationOptions,
+  fetchDefectReworkOptions,
   saveProductionUpdate,
   saveHourlyCount,
-  fetchSuccessCount,
-  fetchReworkCount,
-  fetchDefectCount,
-  fetchHourlySuccess,
 } from '../../api/productionApi';
 import { Controller, useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
@@ -79,9 +76,6 @@ interface DefectReworkData {
   defectCodes: string[];
 }
 
-interface ColorOption {
-  color: string;
-}
 
 interface StyleOption {
   style: any;
@@ -141,110 +135,214 @@ const ProductionUpdatePage = () => {
     location: '',
     defectCode: ''
   });
+  const [dropdownOptions, setDropdownOptions] = useState({
+    styles: [] as string[],
+    colors: [] as string[],
+    sizes: [] as string[],
+    checkPoints: [] as string[]
+  });
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const theme = useTheme();
   useCustomTheme();
 
-  // Mock function for dropdowns (replace with real API if needed)
-  const fetchDropdownOptions = async () => {
-    return {
-      teams: [''],
-      styles: [''],
-      colors: [''],
-      sizes: [''],
-      checkPoints: ['']
-    };
+  const fetchProductionData = async (teamNo: string) => {
+    try {
+      const res = await axios.post(`/api/get-production-data?lineNo=${teamNo}`);
+      const responseData = res.data;
+      const productionData = responseData.dayPlan?.[0] || {};
+
+      return {
+        buyer: productionData.buyer || "N/A",
+        gg: productionData.gg?.toString() || "0",
+        smv: productionData.smv?.toString() || "0",
+        presentCarder: productionData.presentCarder?.toString() || "0",
+        successCount: responseData.successCount || 0,
+        reworkCount: responseData.reworkCount || 0,
+        defectCount: responseData.defectCount || 0,
+        hourlyData: responseData.hourlySuccess ? [
+          responseData.hourlySuccess['1'] || 0,
+          responseData.hourlySuccess['2'] || 0,
+          responseData.hourlySuccess['3'] || 0,
+          responseData.hourlySuccess['4'] || 0,
+          responseData.hourlySuccess['5'] || 0,
+          responseData.hourlySuccess['6'] || 0,
+          responseData.hourlySuccess['7'] || 0,
+          responseData.hourlySuccess['8'] || 0
+        ] : [0, 0, 0, 0, 0, 0, 0, 0]
+      };
+    } catch (error) {
+      console.error('Error fetching production data:', error);
+      throw error;
+    }
   };
 
-  // Only update counts/hourlyData, not header info!
-  const fetchProductionData = async (filters: Filters) => {
-    // Fetch all counts and hourly data from backend
-    const [successCount, reworkCount, defectCount, hourlyData] = await Promise.all([
-      fetchSuccessCount(filters),
-      fetchReworkCount(filters),
-      fetchDefectCount(filters),
-      fetchHourlySuccess(filters),
-    ]);
-    return {
-      successCount,
-      reworkCount,
-      defectCount,
-      hourlyData,
-    };
+  const loadDropdownOptions = async (teamNo: string) => {
+    try {
+      setLoading(prev => ({ ...prev, options: true }));
+      
+      const [colors, styles, sizes, checkPoints] = await Promise.all([
+        fetchColorData(teamNo),
+        fetchStyleData(teamNo),
+        fetchSizeData(teamNo),
+        fetchCheckPointData(teamNo)
+      ]);
+
+      setDropdownOptions({
+        styles: styles.map((item: any) => item.style) || [],
+        colors: colors.map((item: any) => item.color) || [],
+        sizes: sizes.map((item: any) => item.sizeName) || [],
+        checkPoints: checkPoints.map((item: any) => item.actual_column_name) || []
+      });
+
+    } catch (error) {
+      console.error('Error loading dropdown options:', error);
+      showSnackbar('Failed to load dropdown options', 'error');
+    } finally {
+      setLoading(prev => ({ ...prev, options: false }));
+    }
   };
 
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(prev => ({ ...prev, options: true }));
-        const options = await fetchDropdownOptions();
-
-        if (options.teams.length > 0) {
-          setFilters({
-            teamNo: options.teams[0],
-            style: options.styles[0] || '',
-            color: options.colors[0] || '',
-            size: options.sizes[0] || '',
-            checkPoint: options.checkPoints[0] || ''
-          });
-        }
-      } catch (error) {
-        console.error('Error loading dropdown options:', error);
-        showSnackbar('Failed to load dropdown options', 'error');
-      } finally {
-        setLoading(prev => ({ ...prev, options: false }));
-      }
-    };
-
-    const loadDefectReworkOptions = async () => {
-      try {
-        setLoading(prev => ({ ...prev, defectReworkOptions: true }));
-        const [defectOptions, partLocationOptions] = await Promise.all([
-          fetchDefectReworkOptions(),
-          fetchPartLocationOptions()
-        ]);
-        // Extract unique parts and locations
-        const parts = Array.from(new Set(partLocationOptions.partLocations.map((item: any) => item.part))) as string[];
-        const locations = Array.from(new Set(partLocationOptions.partLocations.map((item: any) => item.location))) as string[];
-        setDefectReworkOptions({
-          parts,
-          locations,
-          defectCodes: defectOptions.defectCodes
-        });
-      } catch (error) {
-        console.error('Error loading defect/rework options:', error);
-        showSnackbar('Failed to load defect/rework options', 'error');
-      } finally {
-        setLoading(prev => ({ ...prev, defectReworkOptions: false }));
-      }
-    };
-
-    loadData();
-    loadDefectReworkOptions();
-  }, []);
-
-  useEffect(() => {
-    const loadProductionData = async () => {
-      if (!filters.teamNo) return;
-
+  const handleTeamNoChange = async (newValue: string | null, field: any) => {
+    field.onChange(newValue);
+    if (newValue) {
       try {
         setLoading(prev => ({ ...prev, data: true }));
-        const productionData = await fetchProductionData(filters);
-        setData(prev => ({
-          ...prev,
-          ...productionData
-        }));
+        
+        // Clear all dropdowns first
+        setFilters({
+          teamNo: newValue,
+          style: '',
+          color: '',
+          size: '',
+          checkPoint: ''
+        });
+        setValue("style", "");
+        setValue("color", "");
+        setValue("size", "");
+        setValue("checkPoint", "");
+
+        // Load dropdown options for this team
+        await loadDropdownOptions(newValue);
+
+        // Fetch production data for the selected team
+        const productionStats = await fetchProductionData(newValue);
+        setData(productionStats);
+
+        // Fetch defect/rework options
+        const [defectOptions, partLocationOptions] = await Promise.all([
+          fetchDefectReworkOptions(newValue),
+          fetchPartLocationOptions(newValue)
+        ]);
+
+        setDefectReworkOptions({
+          parts: Array.from(new Set(partLocationOptions.partLocations.map((item: any) => item.part))) as string[],
+          locations: Array.from(new Set(partLocationOptions.partLocations.map((item: any) => item.location))) as string[],
+          defectCodes: defectOptions.defectCodes
+        });
+
+        // Get default values for this team
+        const details = await fetchBuyerDetails(newValue);
+        const productionData = details.latestProductionData?.[0] || {};
+        
+        const newFilters = {
+          teamNo: newValue,
+          style: productionData.style || "",
+          color: productionData.color || "",
+          size: productionData.sizeName || "",
+          checkPoint: productionData.checkPoint || ""
+        };
+        
+        setFilters(newFilters);
+        
+        // Set form values if data exists
+        if (productionData.style) setValue("style", productionData.style);
+        if (productionData.color) setValue("color", productionData.color);
+        if (productionData.sizeName) setValue("size", productionData.sizeName);
+        if (productionData.checkPoint) setValue("checkPoint", productionData.checkPoint);
+
       } catch (error) {
-        console.error('Error loading production data:', error);
-        showSnackbar('Failed to load production data', 'error');
-        setData(defaultProductionData);
+        console.error('Error loading team details:', error);
+        showSnackbar('Failed to load team details', 'error');
       } finally {
         setLoading(prev => ({ ...prev, data: false }));
       }
+    } else {
+      // Clear everything if teamNo is cleared
+      setFilters({
+        teamNo: '',
+        style: '',
+        color: '',
+        size: '',
+        checkPoint: ''
+      });
+      setData(defaultProductionData);
+      setDropdownOptions({
+        styles: [],
+        colors: [],
+        sizes: [],
+        checkPoints: []
+      });
+    }
+  };
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        setLoading(prev => ({ ...prev, options: true }));
+        const teams = await fetchTeamData();
+        
+        // Reset all data first
+        setFilters({
+          teamNo: '',
+          style: '',
+          color: '',
+          size: '',
+          checkPoint: ''
+        });
+        setData(defaultProductionData);
+        setDropdownOptions({
+          styles: [],
+          colors: [],
+          sizes: [],
+          checkPoints: []
+        });
+
+        // Only set first team if teams exist, but don't load data yet
+        if (teams.length > 0) {
+          setFilters(prev => ({
+            ...prev,
+            teamNo: teams[0].lineNo || ''
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        showSnackbar('Failed to load initial data', 'error');
+      } finally {
+        setLoading(prev => ({ ...prev, options: false }));
+        setInitialLoadComplete(true);
+      }
     };
 
-    loadProductionData();
-  }, [filters]);
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (initialLoadComplete && filters.teamNo) {
+      const loadTeamData = async () => {
+        try {
+          setLoading(prev => ({ ...prev, data: true }));
+          await handleTeamNoChange(filters.teamNo, { onChange: () => {} });
+        } catch (error) {
+          console.error('Error loading team data:', error);
+          showSnackbar('Failed to load team data', 'error');
+        } finally {
+          setLoading(prev => ({ ...prev, data: false }));
+        }
+      };
+      
+      loadTeamData();
+    }
+  }, [initialLoadComplete, filters.teamNo]);
 
   const handleFormChange = (event: SelectChangeEvent) => {
     const { name, value } = event.target;
@@ -260,8 +358,12 @@ const ProductionUpdatePage = () => {
     setFormData({ part: '', location: '', defectCode: '' });
   };
 
-  // Success handler
   const handleSuccessClick = async () => {
+    if (!filters.teamNo) {
+      showSnackbar("Please select a team first", "error");
+      return;
+    }
+
     try {
       setLoading(prev => ({ ...prev, submit: true }));
       await saveProductionUpdate({
@@ -270,9 +372,12 @@ const ProductionUpdatePage = () => {
         qualityState: "Success"
       });
       await saveHourlyCount({ filters, qualityState: "Success" });
+      
+      // Refresh the counts after submission
+      const updatedData = await fetchProductionData(filters.teamNo);
+      setData(updatedData);
+      
       showSnackbar("Success submitted", "success");
-      // Update both total and hourly count for Success
-      updateHourlyCount("successCount");
     } catch (error) {
       showSnackbar("Failed to submit success", "error");
     } finally {
@@ -280,8 +385,12 @@ const ProductionUpdatePage = () => {
     }
   };
 
-  // Rework/Defect submit handler
   const handleSubmit = async (type: 'rework' | 'defect') => {
+    if (!filters.teamNo) {
+      showSnackbar("Please select a team first", "error");
+      return;
+    }
+
     try {
       setLoading(prev => ({ ...prev, submit: true }));
       await saveProductionUpdate({
@@ -296,13 +405,13 @@ const ProductionUpdatePage = () => {
         filters,
         qualityState: type === "rework" ? "Rework" : "Defect"
       });
+      
+      // Refresh the counts after submission
+      const updatedData = await fetchProductionData(filters.teamNo);
+      setData(updatedData);
+      
       showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} submitted successfully`, 'success');
       handleDialogClose(type);
-      // Only update the total count, not hourlyData
-      setData(prev => ({
-        ...prev,
-        [type === "rework" ? "reworkCount" : "defectCount"]: (prev[type === "rework" ? "reworkCount" : "defectCount"] || 0) + 1
-      }));
     } catch (error) {
       showSnackbar(`Failed to submit ${type}`, "error");
     } finally {
@@ -310,28 +419,11 @@ const ProductionUpdatePage = () => {
     }
   };
 
-  // Helper to update local hourly count (optional, for UI feedback)
-  const updateHourlyCount = (key: "successCount" | "reworkCount" | "defectCount") => {
-    setData(prev => {
-      const hourIdx = new Date().getHours() - 9; // adjust as needed
-      const newHourlyData = [...prev.hourlyData];
-      if (hourIdx >= 0 && hourIdx < newHourlyData.length) {
-        newHourlyData[hourIdx] = (newHourlyData[hourIdx] || 0) + 1;
-      }
-      return {
-        ...prev,
-        [key]: (prev[key] || 0) + 1,
-        hourlyData: newHourlyData
-      };
-    });
-  };
-
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
     setSnackbar({ open: true, message, severity });
   };
 
   const {
-    register,
     control,
     formState: { errors },
     setValue
@@ -344,50 +436,6 @@ const ProductionUpdatePage = () => {
     queryKey: ["teams"],
     queryFn: fetchTeamData,
   });
-
-  const { data: colorData } = useQuery<ColorOption[]>({
-    queryKey: ["colors"],
-    queryFn: fetchColorData,
-  });
-
-  const { data: styleData } = useQuery<StyleOption[]>({
-    queryKey: ["styles"],
-    queryFn: fetchStyleData,
-  });
-
-  const { data: sizeData } = useQuery<StyleOption[]>({
-    queryKey: ["sizes"],
-    queryFn: fetchSizeData,
-  });
-  const { data: checkPointData } = useQuery<StyleOption[]>({
-    queryKey: ["checkPoints"],
-    queryFn: fetchCheckPointData,
-  });
-
-  // Add this function to update form and data when teamNo changes
-  const handleTeamNoChange = async (newValue: string | null, field: any) => {
-    field.onChange(newValue);
-    if (newValue) {
-      const details = await fetchBuyerDetails(newValue);
-      if (details && details.dayPlan) {
-        setFilters(prev => ({
-          ...prev,
-          teamNo: newValue,
-          style: details.dayPlan.style || "",
-        }));
-        setData(prev => ({
-          ...prev,
-          buyer: details.dayPlan.buyer || "",
-          gg: details.dayPlan.gg || "",
-          smv: details.dayPlan.smv?.toString() || "",
-          presentCarder: details.dayPlan.availableCader?.toString() || "",
-        }));
-        if (details.dayPlan.style) {
-          setValue("style", details.dayPlan.style);
-        }
-      }
-    }
-  };
 
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
@@ -417,11 +465,10 @@ const ProductionUpdatePage = () => {
           {loading.options ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
               <CircularProgress size={60} />
-              <Typography variant="h6" sx={{ ml: 2 }}>Loading dropdown options...</Typography>
+              <Typography variant="h6" sx={{ ml: 2 }}>Loading initial data...</Typography>
             </Box>
           ) : (
             <Card sx={{ p: 3, borderRadius: '12px', boxShadow: 3 }}>
-              {/* Top Info Section */}
               <Stack direction="row" spacing={3} sx={{ mb: 3 }}>
                 {[
                   { label: 'BUYER', value: data.buyer, icon: <Person /> },
@@ -443,19 +490,19 @@ const ProductionUpdatePage = () => {
                 ))}
               </Stack>
 
-              {/* Dropdown Section */}
               <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
                 <Controller
                   control={control}
-                  {...register("teamNo", { required: true })}
+                  name="teamNo"
                   render={({ field }) => (
                     <Autocomplete
-                      {...field}
+                      value={field.value || ''}
                       onChange={async (_event, newValue) => {
                         await handleTeamNoChange(newValue, field);
                       }}
                       size="small"
-                      options={teamData?.map(teamNo => teamNo.lineNo) || []}
+                      options={teamData?.map(team => team.lineNo) || []}
+                      getOptionLabel={(option) => option}
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
@@ -464,7 +511,6 @@ const ProductionUpdatePage = () => {
                           error={!!errors.teamNo}
                           helperText={errors.teamNo && "Required"}
                           label="Team No"
-                          name="teamNo"
                         />
                       )}
                     />
@@ -472,14 +518,20 @@ const ProductionUpdatePage = () => {
                 />
                 <Controller
                   control={control}
-                  {...register("style", { required: true })}
+                  name="style"
                   render={({ field }) => (
                     <Autocomplete
-                      {...field}
-                      value={field.value || filters.style || ""}
-                      onChange={(_event, newValue) => field.onChange(newValue)}
+                      value={field.value || ''}
+                      onChange={(_event, newValue) => {
+                        field.onChange(newValue);
+                        setFilters(prev => ({
+                          ...prev,
+                          style: newValue || "",
+                        }));
+                      }}
                       size="small"
-                      options={styleData?.map(style => style.style) || []}
+                      options={dropdownOptions.styles}
+                      getOptionLabel={(option) => option}
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
@@ -488,7 +540,6 @@ const ProductionUpdatePage = () => {
                           error={!!errors.style}
                           helperText={errors.style && "Required"}
                           label="Style"
-                          name="style"
                         />
                       )}
                     />
@@ -496,10 +547,10 @@ const ProductionUpdatePage = () => {
                 />
                 <Controller
                   control={control}
-                  {...register("color", { required: true })}
+                  name="color"
                   render={({ field }) => (
                     <Autocomplete
-                      {...field}
+                      value={field.value || ''}
                       onChange={(_event, newValue) => {
                         field.onChange(newValue);
                         setFilters(prev => ({
@@ -508,7 +559,8 @@ const ProductionUpdatePage = () => {
                         }));
                       }}
                       size="small"
-                      options={colorData?.map(color => color.color) || []}
+                      options={dropdownOptions.colors}
+                      getOptionLabel={(option) => option}
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
@@ -517,7 +569,6 @@ const ProductionUpdatePage = () => {
                           error={!!errors.color}
                           helperText={errors.color && "Required"}
                           label="Color"
-                          name="color"
                         />
                       )}
                     />
@@ -525,10 +576,10 @@ const ProductionUpdatePage = () => {
                 />
                 <Controller
                   control={control}
-                  {...register("size", { required: true })}
+                  name="size"
                   render={({ field }) => (
                     <Autocomplete
-                      {...field}
+                      value={field.value || ''}
                       onChange={(_event, newValue) => {
                         field.onChange(newValue);
                         setFilters(prev => ({
@@ -537,7 +588,8 @@ const ProductionUpdatePage = () => {
                         }));
                       }}
                       size="small"
-                      options={sizeData?.map(size => size.sizeName) || []}
+                      options={dropdownOptions.sizes}
+                      getOptionLabel={(option) => option}
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
@@ -546,7 +598,6 @@ const ProductionUpdatePage = () => {
                           error={!!errors.size}
                           helperText={errors.size && "Required"}
                           label="Size"
-                          name="size"
                         />
                       )}
                     />
@@ -554,10 +605,10 @@ const ProductionUpdatePage = () => {
                 />
                 <Controller
                   control={control}
-                  {...register("checkPoint", { required: true })}
+                  name="checkPoint"
                   render={({ field }) => (
                     <Autocomplete
-                      {...field}
+                      value={field.value || ''}
                       onChange={(_event, newValue) => {
                         field.onChange(newValue);
                         setFilters(prev => ({
@@ -566,7 +617,8 @@ const ProductionUpdatePage = () => {
                         }));
                       }}
                       size="small"
-                      options={checkPointData?.map(cp => cp.actual_column_name) || []}
+                      options={dropdownOptions.checkPoints}
+                      getOptionLabel={(option) => option}
                       sx={{ flex: 1, margin: "0.5rem" }}
                       renderInput={(params) => (
                         <TextField
@@ -575,7 +627,6 @@ const ProductionUpdatePage = () => {
                           error={!!errors.checkPoint}
                           helperText={errors.checkPoint && "Required"}
                           label="Check Point"
-                          name="checkPoint"
                         />
                       )}
                     />
@@ -583,7 +634,6 @@ const ProductionUpdatePage = () => {
                 />
               </Stack>
 
-              {/* Status Cards */}
               {loading.data ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
                   <CircularProgress size={40} />
@@ -653,7 +703,6 @@ const ProductionUpdatePage = () => {
                 </Stack>
               )}
 
-              {/* Hourly Boxes */}
               <Stack
                 direction="row"
                 flexWrap="initial"
@@ -661,7 +710,7 @@ const ProductionUpdatePage = () => {
                 useFlexGap
                 sx={{ width: '100%', mt: 3 }}
               >
-                {data.hourlyData.map((value, index) => (
+                {Array.isArray(data.hourlyData) && data.hourlyData.map((value, index) => (
                   <Box key={index} sx={{ width: { xs: '90%', sm: '48%', md: '23%', lg: '15%' } }}>
                     <Box sx={{
                       p: 2,
@@ -685,7 +734,6 @@ const ProductionUpdatePage = () => {
           )}
         </Box>
 
-        {/* Rework Dialog */}
         <Dialog
           open={dialogOpen.rework}
           onClose={() => handleDialogClose('rework')}
@@ -714,8 +762,8 @@ const ProductionUpdatePage = () => {
                 onChange={handleFormChange}
                 disabled={loading.defectReworkOptions}
               >
-                {(defectReworkOptions.parts || []).map((part, index) => (
-                  <MenuItem key={index} value={part}>{part}</MenuItem>
+                {defectReworkOptions.parts.map((part, index) => (
+                  <MenuItem key={`${part}-${index}`} value={part}>{part}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -728,8 +776,8 @@ const ProductionUpdatePage = () => {
                 onChange={handleFormChange}
                 disabled={loading.defectReworkOptions}
               >
-                {(defectReworkOptions.locations || []).map((location, index) => (
-                  <MenuItem key={index} value={location}>{location}</MenuItem>
+                {defectReworkOptions.locations.map((location, index) => (
+                  <MenuItem key={`${location}-${index}`} value={location}>{location}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -742,8 +790,8 @@ const ProductionUpdatePage = () => {
                 onChange={handleFormChange}
                 disabled={loading.defectReworkOptions}
               >
-                {(defectReworkOptions.defectCodes || []).map((code, index) => (
-                  <MenuItem key={index} value={code}>{code}</MenuItem>
+                {defectReworkOptions.defectCodes.map((code, index) => (
+                  <MenuItem key={`${code}-${index}`} value={code}>{code}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -762,7 +810,6 @@ const ProductionUpdatePage = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Defect Dialog */}
         <Dialog
           open={dialogOpen.defect}
           onClose={() => handleDialogClose('defect')}
@@ -791,8 +838,8 @@ const ProductionUpdatePage = () => {
                 onChange={handleFormChange}
                 disabled={loading.defectReworkOptions}
               >
-                {(defectReworkOptions.parts || []).map((part, index) => (
-                  <MenuItem key={index} value={part}>{part}</MenuItem>
+                {defectReworkOptions.parts.map((part, index) => (
+                  <MenuItem key={`${part}-${index}`} value={part}>{part}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -805,8 +852,8 @@ const ProductionUpdatePage = () => {
                 onChange={handleFormChange}
                 disabled={loading.defectReworkOptions}
               >
-                {(defectReworkOptions.locations || []).map((location, index) => (
-                  <MenuItem key={index} value={location}>{location}</MenuItem>
+                {defectReworkOptions.locations.map((location, index) => (
+                  <MenuItem key={`${location}-${index}`} value={location}>{location}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -819,8 +866,8 @@ const ProductionUpdatePage = () => {
                 onChange={handleFormChange}
                 disabled={loading.defectReworkOptions}
               >
-                {(defectReworkOptions.defectCodes || []).map((code, index) => (
-                  <MenuItem key={index} value={code}>{code}</MenuItem>
+                {defectReworkOptions.defectCodes.map((code, index) => (
+                  <MenuItem key={`${code}-${index}`} value={code}>{code}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -859,10 +906,3 @@ const ProductionUpdatePage = () => {
 };
 
 export default ProductionUpdatePage;
-
-export async function fetchDefectReworkOptions() {
-  const res = await axios.get("/api/all-defects");
-  return {
-    defectCodes: res.data.map((item: any) => item.defectCode),
-  };
-}
