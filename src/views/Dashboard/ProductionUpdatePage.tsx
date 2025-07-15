@@ -140,12 +140,11 @@ const ProductionUpdatePage = () => {
     sizes: [] as string[],
     checkPoints: [] as string[]
   });
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [, setInitialLoadComplete] = useState(false);
   const [currentHour, setCurrentHour] = useState<number>(0);
   const theme = useTheme();
   useCustomTheme();
 
-  // Update current hour every minute
   useEffect(() => {
     const updateCurrentHour = () => {
       const now = new Date();
@@ -295,29 +294,7 @@ const ProductionUpdatePage = () => {
     const loadInitialData = async () => {
       try {
         setLoading(prev => ({ ...prev, options: true }));
-        const teams = await fetchTeamData();
-
-        setFilters({
-          teamNo: '',
-          style: '',
-          color: '',
-          size: '',
-          checkPoint: ''
-        });
-        setData(defaultProductionData);
-        setDropdownOptions({
-          styles: [],
-          colors: [],
-          sizes: [],
-          checkPoints: []
-        });
-
-        if (teams.length > 0) {
-          setFilters(prev => ({
-            ...prev,
-            teamNo: teams[0].lineNo || ''
-          }));
-        }
+        await fetchTeamData();
       } catch (error) {
         console.error('Error loading initial data:', error);
         showSnackbar('Failed to load initial data', 'error');
@@ -329,24 +306,6 @@ const ProductionUpdatePage = () => {
 
     loadInitialData();
   }, []);
-
-  useEffect(() => {
-    if (initialLoadComplete && filters.teamNo) {
-      const loadTeamData = async () => {
-        try {
-          setLoading(prev => ({ ...prev, data: true }));
-          await handleTeamNoChange(filters.teamNo, { onChange: () => { } });
-        } catch (error) {
-          console.error('Error loading team data:', error);
-          showSnackbar('Failed to load team data', 'error');
-        } finally {
-          setLoading(prev => ({ ...prev, data: false }));
-        }
-      };
-
-      loadTeamData();
-    }
-  }, [initialLoadComplete, filters.teamNo]);
 
   const handleFormChange = (event: SelectChangeEvent) => {
     const { name, value } = event.target;
@@ -439,7 +398,6 @@ const ProductionUpdatePage = () => {
     queryFn: fetchTeamData,
   });
 
-  // Working hours configuration (8am to 4pm)
   const workingHours = {
     start: 8,
     end: 16
@@ -471,21 +429,41 @@ const ProductionUpdatePage = () => {
         </AppBar>
         <Box sx={{ p: 3, flexGrow: 1, overflow: "auto" }}>
           {loading.options ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '00px' }}>
-              <CircularProgress size={60} />
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px' }}>
+              <CircularProgress size={40} />
               <Typography variant="h6" sx={{ ml: 2 }}>Loading initial data...</Typography>
             </Box>
           ) : (
             <Card sx={{ p: 3, borderRadius: '12px', boxShadow: 3 }}>
-              <Stack direction="row" spacing={25} sx={{ mb: 4 }}>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                gap: { xs: 2, sm: 0 },
+                mb: 8,
+                flexWrap: 'wrap'
+              }}>
                 {[
-                  { label: 'BUYER', value: data.buyer, icon: <Person /> },
-                  { label: 'GG', value: data.gg, icon: <StyleIcon /> },
-                  { label: 'SMV', value: data.smv, icon: <AssignmentTurnedIn /> },
-                  { label: 'PRESENT CARDER', value: data.availableCader, icon: <Person /> }
+                  { label: 'BUYER', value: data.buyer, icon: <Person />, align: 'flex-start' },
+                  { label: 'GG', value: data.gg, icon: <StyleIcon />, align: 'center' },
+                  { label: 'SMV', value: data.smv, icon: <AssignmentTurnedIn />, align: 'center' },
+                  { label: 'PRESENT CARDER', value: data.availableCader, icon: <Person />, align: 'flex-end' }
                 ].map((item, index) => (
-                  <Box key={index} sx={{ width: { xs: '100%', sm: '25%' } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 4 }}>
+                  <Box
+                    key={index}
+                    sx={{
+                      width: { xs: '100%', sm: '23%' },
+                      display: 'flex',
+                      justifyContent: { xs: 'flex-start', sm: item.align }
+                    }}
+                  >
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      width: '100%',
+                      maxWidth: 300
+                    }}>
                       <Avatar sx={{ bgcolor: 'primary.main' }}>{item.icon}</Avatar>
                       <div>
                         <Typography variant="subtitle2" color="textSecondary">
@@ -496,9 +474,8 @@ const ProductionUpdatePage = () => {
                     </Box>
                   </Box>
                 ))}
-              </Stack>
-
-              <Stack direction="row" spacing={2} sx={{ mb: 8 }}>
+              </Box>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 8, flexWrap: 'wrap' }}>
                 <Controller
                   control={control}
                   name="teamNo"
@@ -511,7 +488,7 @@ const ProductionUpdatePage = () => {
                       size="small"
                       options={teamData?.map(team => team.lineNo) || []}
                       getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -524,196 +501,273 @@ const ProductionUpdatePage = () => {
                     />
                   )}
                 />
-                <Controller
-                  control={control}
-                  name="style"
-                  render={({ field }) => (
-                    <Autocomplete
-                      value={field.value || ''}
-                      onChange={(_event, newValue) => {
-                        field.onChange(newValue);
-                        setFilters(prev => ({
-                          ...prev,
-                          style: newValue || "",
-                        }));
-                      }}
-                      size="small"
-                      options={dropdownOptions.styles}
-                      getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          required
-                          error={!!errors.style}
-                          helperText={errors.style && "Required"}
-                          label="Style"
+
+                {filters.teamNo && (
+                  <>
+                    <Controller
+                      control={control}
+                      name="style"
+                      render={({ field }) => (
+                        <Autocomplete
+                          value={field.value || ''}
+                          onChange={(_event, newValue) => {
+                            field.onChange(newValue);
+                            setFilters(prev => ({
+                              ...prev,
+                              style: newValue || "",
+                            }));
+                          }}
+                          size="small"
+                          options={dropdownOptions.styles}
+                          getOptionLabel={(option) => option}
+                          sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              required
+                              error={!!errors.style}
+                              helperText={errors.style && "Required"}
+                              label="Style"
+                            />
+                          )}
                         />
                       )}
                     />
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="color"
-                  render={({ field }) => (
-                    <Autocomplete
-                      value={field.value || ''}
-                      onChange={(_event, newValue) => {
-                        field.onChange(newValue);
-                        setFilters(prev => ({
-                          ...prev,
-                          color: newValue || "",
-                        }));
-                      }}
-                      size="small"
-                      options={dropdownOptions.colors}
-                      getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          required
-                          error={!!errors.color}
-                          helperText={errors.color && "Required"}
-                          label="Color"
+                    <Controller
+                      control={control}
+                      name="color"
+                      render={({ field }) => (
+                        <Autocomplete
+                          value={field.value || ''}
+                          onChange={(_event, newValue) => {
+                            field.onChange(newValue);
+                            setFilters(prev => ({
+                              ...prev,
+                              color: newValue || "",
+                            }));
+                          }}
+                          size="small"
+                          options={dropdownOptions.colors}
+                          getOptionLabel={(option) => option}
+                          sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              required
+                              error={!!errors.color}
+                              helperText={errors.color && "Required"}
+                              label="Color"
+                            />
+                          )}
                         />
                       )}
                     />
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="size"
-                  render={({ field }) => (
-                    <Autocomplete
-                      value={field.value || ''}
-                      onChange={(_event, newValue) => {
-                        field.onChange(newValue);
-                        setFilters(prev => ({
-                          ...prev,
-                          size: newValue || "",
-                        }));
-                      }}
-                      size="small"
-                      options={dropdownOptions.sizes}
-                      getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          required
-                          error={!!errors.size}
-                          helperText={errors.size && "Required"}
-                          label="Size"
+                    <Controller
+                      control={control}
+                      name="size"
+                      render={({ field }) => (
+                        <Autocomplete
+                          value={field.value || ''}
+                          onChange={(_event, newValue) => {
+                            field.onChange(newValue);
+                            setFilters(prev => ({
+                              ...prev,
+                              size: newValue || "",
+                            }));
+                          }}
+                          size="small"
+                          options={dropdownOptions.sizes}
+                          getOptionLabel={(option) => option}
+                          sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              required
+                              error={!!errors.size}
+                              helperText={errors.size && "Required"}
+                              label="Size"
+                            />
+                          )}
                         />
                       )}
                     />
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="checkPoint"
-                  render={({ field }) => (
-                    <Autocomplete
-                      value={field.value || ''}
-                      onChange={(_event, newValue) => {
-                        field.onChange(newValue);
-                        setFilters(prev => ({
-                          ...prev,
-                          checkPoint: newValue || "",
-                        }));
-                      }}
-                      size="small"
-                      options={dropdownOptions.checkPoints}
-                      getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          required
-                          error={!!errors.checkPoint}
-                          helperText={errors.checkPoint && "Required"}
-                          label="Check Point"
+                    <Controller
+                      control={control}
+                      name="checkPoint"
+                      render={({ field }) => (
+                        <Autocomplete
+                          value={field.value || ''}
+                          onChange={(_event, newValue) => {
+                            field.onChange(newValue);
+                            setFilters(prev => ({
+                              ...prev,
+                              checkPoint: newValue || "",
+                            }));
+                          }}
+                          size="small"
+                          options={dropdownOptions.checkPoints}
+                          getOptionLabel={(option) => option}
+                          sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              required
+                              error={!!errors.checkPoint}
+                              helperText={errors.checkPoint && "Required"}
+                              label="Check Point"
+                            />
+                          )}
                         />
                       )}
                     />
-                  )}
-                />
+                  </>
+                )}
               </Stack>
 
               {loading.data ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                  <CircularProgress size={40} />
+                  <CircularProgress size={30} />
                 </Box>
               ) : (
-                <Stack direction="row" spacing={30} sx={{ mb: 5 }}>
-                  {[
-                    {
-                      title: 'Success',
-                      value: data.successCount,
-                      gradient: 'linear-gradient(to right, #00BA57, #006931)',
-                      icon: <AssignmentTurnedIn sx={{ fontSize: 40, opacity: 0.8 }} />,
-                      onClick: handleSuccessClick
-                    },
-                    {
-                      title: 'Rework',
-                      value: data.reworkCount,
-                      gradient: 'linear-gradient(to right, #FFD900, #DB5B00)',
-                      icon: <StyleIcon sx={{ fontSize: 40, opacity: 0.8 }} />,
-                      onClick: () => handleDialogOpen('rework')
-                    },
-                    {
-                      title: 'Defect',
-                      value: data.defectCount,
-                      gradient: 'linear-gradient(to right, #EB0004, #960003)',
-                      icon: <Delete sx={{ fontSize: 40, opacity: 0.8 }} />,
-                      onClick: () => handleDialogOpen('defect')
-                    }
-                  ].map((status, index) => (
-                    <Box key={index} sx={{ width: { xs: '100%', md: '33%' } }}>
-                      <Box
-                        sx={{
-                          p: 3,
-                          borderRadius: '12px',
-                          background: status.gradient,
-                          color: 'white',
-                          boxShadow: 3,
-                          height: 130,
-                          width: 300,
-                          display: 'flex',
-                          marginBottom: 5,
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          position: 'relative',
-                          transition: 'transform 0.3s',
-                          '&:hover': {
-                            transform: 'scale(1.02)',
-                            cursor: typeof status.onClick === 'function' ? 'pointer' : 'default'
-                          }
-                        }}
-                        onClick={status.onClick || undefined}
-                      >
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                          {status.title}
-                        </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Box sx={{ position: 'absolute', bottom: 10, left: 15 }}>
-                            {status.icon}
-                          </Box>
-                          <Typography variant="h4" sx={{ fontWeight: 'bold', position: 'absolute', bottom: 10, right: 15 }}>
-                            {status.value}
-                          </Typography>
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  mb: 10,
+                  mt: 11,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 2, sm: 0 }
+                }}>
+                  {/* Success Box - Left aligned */}
+                  <Box sx={{
+                    width: { xs: '100%', sm: '32%' },
+                    display: 'flex',
+                    justifyContent: { xs: 'center', sm: 'flex-start' }
+                  }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        borderRadius: '12px',
+                        background: 'linear-gradient(to right, #00BA57, #006931)',
+                        color: 'white',
+                        boxShadow: 3,
+                        height: 130,
+                        width: '100%',
+                        maxWidth: 300,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        position: 'relative',
+                        transition: 'transform 0.3s',
+                        '&:hover': {
+                          transform: 'scale(1.02)',
+                          cursor: 'pointer'
+                        }
+                      }}
+                      onClick={handleSuccessClick}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Success
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ position: 'absolute', bottom: 10, left: 15 }}>
+                          <AssignmentTurnedIn sx={{ fontSize: 40, opacity: 0.8 }} />
                         </Box>
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', position: 'absolute', bottom: 10, right: 15 }}>
+                          {data.successCount}
+                        </Typography>
                       </Box>
                     </Box>
-                  ))}
-                </Stack>
-              )}
+                  </Box>
 
+                  {/* Rework Box - Centered */}
+                  <Box sx={{
+                    width: { xs: '100%', sm: '32%' },
+                    display: 'flex',
+                    justifyContent: 'center'
+                  }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        borderRadius: '12px',
+                        background: 'linear-gradient(to right, #FFD900, #DB5B00)',
+                        color: 'white',
+                        boxShadow: 3,
+                        height: 130,
+                        width: '100%',
+                        maxWidth: 300,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        position: 'relative',
+                        transition: 'transform 0.3s',
+                        '&:hover': {
+                          transform: 'scale(1.02)',
+                          cursor: 'pointer'
+                        }
+                      }}
+                      onClick={() => handleDialogOpen('rework')}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Rework
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ position: 'absolute', bottom: 10, left: 15 }}>
+                          <StyleIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+                        </Box>
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', position: 'absolute', bottom: 10, right: 15 }}>
+                          {data.reworkCount}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Defect Box - Right aligned */}
+                  <Box sx={{
+                    width: { xs: '100%', sm: '32%' },
+                    display: 'flex',
+                    justifyContent: { xs: 'center', sm: 'flex-end' }
+                  }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        borderRadius: '12px',
+                        background: 'linear-gradient(to right, #EB0004, #960003)',
+                        color: 'white',
+                        boxShadow: 3,
+                        height: 130,
+                        width: '100%',
+                        maxWidth: 300,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        position: 'relative',
+                        transition: 'transform 0.3s',
+                        '&:hover': {
+                          transform: 'scale(1.02)',
+                          cursor: 'pointer'
+                        }
+                      }}
+                      onClick={() => handleDialogOpen('defect')}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Defect
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ position: 'absolute', bottom: 10, left: 15 }}>
+                          <Delete sx={{ fontSize: 40, opacity: 0.8 }} />
+                        </Box>
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', position: 'absolute', bottom: 10, right: 15 }}>
+                          {data.defectCount}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
               <Stack
                 direction="row"
-                flexWrap="initial"
+                flexWrap="inherit"
                 spacing={2}
                 useFlexGap
                 sx={{ width: '100%', mt: 3 }}
@@ -724,7 +778,11 @@ const ProductionUpdatePage = () => {
                   const isCurrentHour = currentHour === hourInDay;
 
                   return (
-                    <Box key={index} sx={{ width: { xs: '90%', sm: '48%', md: '23%', lg: '15%' } }}>
+                    <Box key={index} sx={{
+                      mb: 2,
+                      width: { xs: '100%', sm: '48%', md: '23%', lg: '12%'},
+                      minWidth: '100px'
+                    }}>
                       <Box sx={{
                         p: 2,
                         textAlign: 'center',
@@ -744,7 +802,7 @@ const ProductionUpdatePage = () => {
                         </Typography>
                         {isCurrentHour && (
                           <Typography variant="caption" display="block" sx={{ color: 'yellow' }}>
-                            Current
+
                           </Typography>
                         )}
                       </Box>
