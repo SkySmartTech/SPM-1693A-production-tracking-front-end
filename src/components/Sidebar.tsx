@@ -11,9 +11,6 @@ import {
   Toolbar,
   Box,
   Avatar,
-  Tooltip,
-  Menu,
-  MenuItem
 } from "@mui/material";
 import {
   Home,
@@ -42,9 +39,6 @@ const collapsedWidth = 56;
 
 const Sidebar = ({ open, setOpen }: SidebarProps) => {
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({});
-  const [, setHoveredSection] = useState<string | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [currentNestedItems, setCurrentNestedItems] = useState<any[]>([]);
   const navigate = useNavigate();
   const { mode } = useThemeMode();
   const { enqueueSnackbar } = useSnackbar();
@@ -144,19 +138,6 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
     setOpen(false);
   };
 
-  const handleNestedHover = (event: React.MouseEvent<HTMLElement>, item: any) => {
-    if (!open && item.children) {
-      setAnchorEl(event.currentTarget);
-      setCurrentNestedItems(item.children);
-      setHoveredSection(item.title);
-    }
-  };
-
-  const handleCloseMenu = () => {
-    setAnchorEl(null);
-    setHoveredSection(null);
-  };
-
   return (
     <Drawer
       variant="permanent"
@@ -176,6 +157,8 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
           borderRight: 'none',
         },
       }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
     >
       <Toolbar />
       <Box
@@ -227,7 +210,8 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
                 key={index}
                 sx={{
                   my: 1,
-                  backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"
+                  backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)",
+                  display: open ? "block" : "none",
                 }}
               />
             );
@@ -236,74 +220,60 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
           if (item.type === "nested") {
             return (
               <div key={index}>
-                <Tooltip 
-                  title={item.title} 
-                  placement="right"
-                  disableHoverListener={open}
+                <ListItemButton
+                  onClick={() => toggleSection(item.title!)}
+                  sx={{
+                    minHeight: 48,
+                    px: 2.5,
+                    "&:hover": {
+                      backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
+                    }
+                  }}
                 >
-                  <ListItemButton
-                    onClick={() => toggleSection(item.title!)}
-                    onMouseEnter={(e) => handleNestedHover(e, item)}
-                    onMouseLeave={handleCloseMenu}
-                    sx={{
-                      minHeight: 48,
-                      px: 2.5,
-                      "&:hover": {
-                        backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
-                      }
-                    }}
-                  >
-                    <StyledListItemIcon>{item.icon}</StyledListItemIcon>
-                    {open && (
-                      <>
-                        <ListItemText
-                          primary={item.title}
-                          primaryTypographyProps={{
-                            fontSize: "0.875rem",
-                            color: mode === 'dark' ? "#ffffff" : "#000000"
-                          }}
-                        />
-                        {openSections[item.title!] ? (
-                          <ExpandLess fontSize="small" />
-                        ) : (
-                          <ExpandMore fontSize="small" />
-                        )}
-                      </>
-                    )}
-                  </ListItemButton>
-                </Tooltip>
+                  <StyledListItemIcon>{item.icon}</StyledListItemIcon>
+                  {open && (
+                    <>
+                      <ListItemText
+                        primary={item.title}
+                        primaryTypographyProps={{
+                          fontSize: "0.875rem",
+                          color: mode === 'dark' ? "#ffffff" : "#000000"
+                        }}
+                      />
+                      {openSections[item.title!] ? (
+                        <ExpandLess fontSize="small" />
+                      ) : (
+                        <ExpandMore fontSize="small" />
+                      )}
+                    </>
+                  )}
+                </ListItemButton>
                 
                 <Collapse in={openSections[item.title!] && open} timeout="auto" unmountOnExit>
                   <List disablePadding sx={{ pl: 2 }}>
                     {item.children?.map((child, childIndex) => (
-                      <Tooltip 
+                      <ListItemButton
                         key={childIndex}
-                        title={child.title} 
-                        placement="right"
-                        disableHoverListener={open}
+                        onClick={() => handleItemClick(child)}
+                        sx={{
+                          pl: 4,
+                          minHeight: 48,
+                          "&:hover": {
+                            backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
+                          }
+                        }}
                       >
-                        <ListItemButton
-                          onClick={() => handleItemClick(child)}
-                          sx={{
-                            pl: 4,
-                            minHeight: 48,
-                            "&:hover": {
-                              backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
-                            }
-                          }}
-                        >
-                          <StyledListItemIcon>{child.icon}</StyledListItemIcon>
-                          {open && (
-                            <ListItemText
-                              primary={child.title}
-                              primaryTypographyProps={{
-                                fontSize: "0.875rem",
-                                color: mode === 'dark' ? "#ffffff" : "#000000"
-                              }}
-                            />
-                          )}
-                        </ListItemButton>
-                      </Tooltip>
+                        <StyledListItemIcon>{child.icon}</StyledListItemIcon>
+                        {open && (
+                          <ListItemText
+                            primary={child.title}
+                            primaryTypographyProps={{
+                              fontSize: "0.875rem",
+                              color: mode === 'dark' ? "#ffffff" : "#000000"
+                            }}
+                          />
+                        )}
+                      </ListItemButton>
                     ))}
                   </List>
                 </Collapse>
@@ -312,96 +282,31 @@ const Sidebar = ({ open, setOpen }: SidebarProps) => {
           }
 
           return (
-            <Tooltip 
+            <ListItemButton
               key={index}
-              title={item.title} 
-              placement="right"
-              disableHoverListener={open}
+              onClick={() => handleItemClick(item)}
+              sx={{
+                minHeight: 48,
+                px: 2.5,
+                "&:hover": {
+                  backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
+                }
+              }}
             >
-              <ListItemButton
-                onClick={() => handleItemClick(item)}
-                sx={{
-                  minHeight: 48,
-                  px: 2.5,
-                  "&:hover": {
-                    backgroundColor: mode === 'dark' ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)"
-                  }
-                }}
-              >
-                <StyledListItemIcon>{item.icon}</StyledListItemIcon>
-                {open && (
-                  <ListItemText
-                    primary={item.title}
-                    primaryTypographyProps={{
-                      fontSize: "0.875rem",
-                      color: mode === 'dark' ? "#ffffff" : "#000000"
-                    }}
-                  />
-                )}
-              </ListItemButton>
-            </Tooltip>
+              <StyledListItemIcon>{item.icon}</StyledListItemIcon>
+              {open && (
+                <ListItemText
+                  primary={item.title}
+                  primaryTypographyProps={{
+                    fontSize: "0.875rem",
+                    color: mode === 'dark' ? "#ffffff" : "#000000"
+                  }}
+                />
+              )}
+            </ListItemButton>
           );
         })}
       </List>
-
-      {/* Floating menu for nested items when sidebar is collapsed */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl) && !open}
-        onClose={handleCloseMenu}
-        MenuListProps={{ 
-          onMouseLeave: handleCloseMenu,
-          sx: { 
-            py: 0,
-            minWidth: 200,
-            backgroundColor: mode === 'dark' ? '#424242' : '#fff'
-          }
-        }}
-        PaperProps={{
-          sx: {
-            overflow: 'visible',
-            mt: -1,
-            ml: 0.5,
-            boxShadow: 3,
-            '&:before': {
-              content: '""',
-              display: 'block',
-              position: 'absolute',
-              top: 12,
-              left: -8,
-              width: 16,
-              height: 16,
-              bgcolor: mode === 'dark' ? '#424242' : '#fff',
-              transform: 'rotate(45deg)',
-              zIndex: 0,
-            },
-          },
-        }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
-      >
-        {currentNestedItems.map((child, index) => (
-          <MenuItem 
-            key={index}
-            onClick={() => {
-              handleItemClick(child);
-              handleCloseMenu();
-            }}
-            sx={{
-              py: 1,
-              px: 2,
-              '&:hover': {
-                backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
-              }
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: '36px !important' }}>
-              {child.icon}
-            </ListItemIcon>
-            <ListItemText>{child.title}</ListItemText>
-          </MenuItem>
-        ))}
-      </Menu>
     </Drawer>
   );
 };
