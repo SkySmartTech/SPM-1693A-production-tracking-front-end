@@ -435,46 +435,97 @@ const ProductionUpdatePage = () => {
             </Box>
           ) : (
             <Card sx={{ p: 3, borderRadius: '12px', boxShadow: 3 }}>
-              <Box sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                justifyContent: 'space-between',
-                gap: { xs: 2, sm: 0 },
-                mb: 8,
-                flexWrap: 'wrap'
-              }}>
-                {[
-                  { label: 'BUYER', value: data.buyer, icon: <Person />, align: 'flex-start' },
-                  { label: 'GG', value: data.gg, icon: <StyleIcon />, align: 'center' },
-                  { label: 'SMV', value: data.smv, icon: <AssignmentTurnedIn />, align: 'center' },
-                  { label: 'PRESENT CARDER', value: data.availableCader, icon: <Person />, align: 'flex-end' }
-                ].map((item, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      width: { xs: '100%', sm: '23%' },
-                      display: 'flex',
-                      justifyContent: { xs: 'flex-start', sm: item.align }
-                    }}
-                  >
-                    <Box sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      width: '100%',
-                      maxWidth: 300
-                    }}>
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>{item.icon}</Avatar>
-                      <div>
-                        <Typography variant="subtitle2" color="textSecondary">
-                          {item.label}
-                        </Typography>
-                        <Typography variant="h6">{item.value}</Typography>
-                      </div>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
+             <Box sx={{
+  display: 'flex',
+  flexDirection: { xs: 'column', sm: 'row' },
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: { xs: 2, sm: 0 },
+  mb: 8,
+  width: '100%'
+}}>
+  {/* Buyer - Left aligned */}
+  <Box sx={{
+    width: { xs: '100%', sm: 'auto' },
+    display: 'flex',
+    justifyContent: 'flex-start',
+    mr: { sm: 'auto' } // Pushes other items away
+  }}>
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      maxWidth: 300
+    }}>
+      <Avatar sx={{ bgcolor: 'primary.main' }}><Person /></Avatar>
+      <div>
+        <Typography variant="subtitle2" color="textSecondary">BUYER</Typography>
+        <Typography variant="h6">{data.buyer}</Typography>
+      </div>
+    </Box>
+  </Box>
+
+  {/* GG - Centered */}
+  <Box sx={{
+    display: 'flex',
+    justifyContent: 'center',
+    mx: 'auto' // Centers this item
+  }}>
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      maxWidth: 300
+    }}>
+      <Avatar sx={{ bgcolor: 'primary.main' }}><StyleIcon /></Avatar>
+      <div>
+        <Typography variant="subtitle2" color="textSecondary">GG</Typography>
+        <Typography variant="h6">{data.gg}</Typography>
+      </div>
+    </Box>
+  </Box>
+
+  {/* SMV - Centered */}
+  <Box sx={{
+    display: 'flex',
+    justifyContent: 'center',
+    mx: 'auto' // Centers this item
+  }}>
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      maxWidth: 300
+    }}>
+      <Avatar sx={{ bgcolor: 'primary.main' }}><AssignmentTurnedIn /></Avatar>
+      <div>
+        <Typography variant="subtitle2" color="textSecondary">SMV</Typography>
+        <Typography variant="h6">{data.smv}</Typography>
+      </div>
+    </Box>
+  </Box>
+
+  {/* Present Carder - Right aligned */}
+  <Box sx={{
+    width: { xs: '100%', sm: 'auto' },
+    display: 'flex',
+    justifyContent: 'flex-end',
+    ml: { sm: 'auto' } // Pushes this item to the right
+  }}>
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      maxWidth: 300
+    }}>
+      <Avatar sx={{ bgcolor: 'primary.main' }}><Person /></Avatar>
+      <div>
+        <Typography variant="subtitle2" color="textSecondary">PRESENT CARDER</Typography>
+        <Typography variant="h6">{data.availableCader}</Typography>
+      </div>
+    </Box>
+  </Box>
+</Box>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 8, flexWrap: 'wrap' }}>
                 <Controller
                   control={control}
