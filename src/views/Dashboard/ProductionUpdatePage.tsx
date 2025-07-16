@@ -88,7 +88,7 @@ interface StyleOption {
 }
 
 const defaultProductionData: ProductionData = {
-  buyer: 'N/A',
+  buyer: '0',
   gg: '0',
   smv: '0',
   availableCader: '0',
@@ -123,7 +123,8 @@ const ProductionUpdatePage = () => {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
-    severity: 'success' as 'success' | 'error' | 'info' | 'warning'
+    severity: 'success' as 'success' | 'error' | 'info' | 'warning',
+    anchorOrigin: { vertical: 'top', horizontal: 'center' }
   });
   const [dialogOpen, setDialogOpen] = useState({
     rework: false,
@@ -135,7 +136,7 @@ const ProductionUpdatePage = () => {
     defectCode: ''
   });
   const [dropdownOptions, setDropdownOptions] = useState({
-    styles: [] as string[],
+    styleNo: [] as string[],
     colors: [] as string[],
     sizes: [] as string[],
     checkPoints: [] as string[]
@@ -157,36 +158,40 @@ const ProductionUpdatePage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const fetchProductionData = async (teamNo: string) => {
-    try {
-      const res = await axios.post(`/api/get-production-data?lineNo=${teamNo}`);
-      const responseData = res.data;
-      const productionData = responseData.dayPlan?.[0] || {};
+const fetchProductionData = async (teamNo: string) => {
+  if (!teamNo) {
+    return defaultProductionData;
+  }
+  
+  try {
+    const res = await axios.post(`/api/get-production-data?lineNo=${teamNo}`);
+    const responseData = res.data;
+    const productionData = responseData.dayPlan?.[0] || {};
 
-      return {
-        buyer: productionData.buyer || "N/A",
-        gg: productionData.gg?.toString() || "0",
-        smv: productionData.smv?.toString() || "0",
-        availableCader: productionData.availableCader?.toString() || "0",
-        successCount: responseData.successCount || 0,
-        reworkCount: responseData.reworkCount || 0,
-        defectCount: responseData.defectCount || 0,
-        hourlyData: responseData.hourlySuccess ? [
-          responseData.hourlySuccess['1'] || 0,
-          responseData.hourlySuccess['2'] || 0,
-          responseData.hourlySuccess['3'] || 0,
-          responseData.hourlySuccess['4'] || 0,
-          responseData.hourlySuccess['5'] || 0,
-          responseData.hourlySuccess['6'] || 0,
-          responseData.hourlySuccess['7'] || 0,
-          responseData.hourlySuccess['8'] || 0
-        ] : [0, 0, 0, 0, 0, 0, 0, 0]
-      };
-    } catch (error) {
-      console.error('Error fetching production data:', error);
-      throw error;
-    }
-  };
+    return {
+      buyer: productionData.buyer || "N/A",
+      gg: productionData.gg?.toString() || "0",
+      smv: productionData.smv?.toString() || "0",
+      availableCader: productionData.availableCader?.toString() || "0",
+      successCount: responseData.successCount || 0,
+      reworkCount: responseData.reworkCount || 0,
+      defectCount: responseData.defectCount || 0,
+      hourlyData: responseData.hourlySuccess ? [
+        responseData.hourlySuccess['1'] || 0,
+        responseData.hourlySuccess['2'] || 0,
+        responseData.hourlySuccess['3'] || 0,
+        responseData.hourlySuccess['4'] || 0,
+        responseData.hourlySuccess['5'] || 0,
+        responseData.hourlySuccess['6'] || 0,
+        responseData.hourlySuccess['7'] || 0,
+        responseData.hourlySuccess['8'] || 0
+      ] : [0, 0, 0, 0, 0, 0, 0, 0]
+    };
+  } catch (error) {
+    console.error('Error fetching production data:', error);
+    return defaultProductionData;
+  }
+};
 
   const loadDropdownOptions = async (teamNo: string) => {
     try {
@@ -200,7 +205,7 @@ const ProductionUpdatePage = () => {
       ]);
 
       setDropdownOptions({
-        styles: styles.map((item: any) => item.style) || [],
+        styleNo: styles.map((item: any) => item.styleNo) || [],
         colors: colors.map((item: any) => item.color) || [],
         sizes: sizes.map((item: any) => item.sizeName) || [],
         checkPoints: checkPoints.map((item: any) => item.actual_column_name) || []
@@ -282,7 +287,7 @@ const ProductionUpdatePage = () => {
       });
       setData(defaultProductionData);
       setDropdownOptions({
-        styles: [],
+        styleNo: [],
         colors: [],
         sizes: [],
         checkPoints: []
@@ -294,7 +299,7 @@ const ProductionUpdatePage = () => {
     const loadInitialData = async () => {
       try {
         setLoading(prev => ({ ...prev, options: true }));
-        await fetchTeamData();
+
       } catch (error) {
         console.error('Error loading initial data:', error);
         showSnackbar('Failed to load initial data', 'error');
@@ -381,7 +386,12 @@ const ProductionUpdatePage = () => {
   };
 
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
-    setSnackbar({ open: true, message, severity });
+    setSnackbar({ 
+      open: true, 
+      message, 
+      severity,
+      anchorOrigin: { vertical: 'top', horizontal: 'center' }
+    });
   };
 
   const {
@@ -427,6 +437,23 @@ const ProductionUpdatePage = () => {
             setSidebarOpen={setSidebarOpen}
           />
         </AppBar>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{ mt: 6 }}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+
         <Box sx={{ p: 3, flexGrow: 1, overflow: "auto" }}>
           {loading.options ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px' }}>
@@ -435,97 +462,98 @@ const ProductionUpdatePage = () => {
             </Box>
           ) : (
             <Card sx={{ p: 3, borderRadius: '12px', boxShadow: 3 }}>
-             <Box sx={{
-  display: 'flex',
-  flexDirection: { xs: 'column', sm: 'row' },
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: { xs: 2, sm: 0 },
-  mb: 8,
-  width: '100%'
-}}>
-  {/* Buyer - Left aligned */}
-  <Box sx={{
-    width: { xs: '100%', sm: 'auto' },
-    display: 'flex',
-    justifyContent: 'flex-start',
-    mr: { sm: 'auto' } // Pushes other items away
-  }}>
-    <Box sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 2,
-      maxWidth: 300
-    }}>
-      <Avatar sx={{ bgcolor: 'primary.main' }}><Person /></Avatar>
-      <div>
-        <Typography variant="subtitle2" color="textSecondary">BUYER</Typography>
-        <Typography variant="h6">{data.buyer}</Typography>
-      </div>
-    </Box>
-  </Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: { xs: 2, sm: 0 },
+                mb: 8,
+                width: '100%'
+              }}>
+                {/* Buyer - Left aligned */}
+                <Box sx={{
+                  width: { xs: '100%', sm: 'auto' },
+                  display: 'flex',
+                  justifyContent: 'flex-start',
+                  mr: { sm: 'auto' }
+                }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    maxWidth: 300
+                  }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><Person /></Avatar>
+                    <div>
+                      <Typography variant="subtitle2" color="textSecondary">BUYER</Typography>
+                      <Typography variant="h6">{data.buyer}</Typography>
+                    </div>
+                  </Box>
+                </Box>
 
-  {/* GG - Centered */}
-  <Box sx={{
-    display: 'flex',
-    justifyContent: 'center',
-    mx: 'auto' // Centers this item
-  }}>
-    <Box sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 2,
-      maxWidth: 300
-    }}>
-      <Avatar sx={{ bgcolor: 'primary.main' }}><StyleIcon /></Avatar>
-      <div>
-        <Typography variant="subtitle2" color="textSecondary">GG</Typography>
-        <Typography variant="h6">{data.gg}</Typography>
-      </div>
-    </Box>
-  </Box>
+                {/* GG - Centered */}
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  mx: 'auto'
+                }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    maxWidth: 300
+                  }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><StyleIcon /></Avatar>
+                    <div>
+                      <Typography variant="subtitle2" color="textSecondary">GG</Typography>
+                      <Typography variant="h6">{data.gg}</Typography>
+                    </div>
+                  </Box>
+                </Box>
 
-  {/* SMV - Centered */}
-  <Box sx={{
-    display: 'flex',
-    justifyContent: 'center',
-    mx: 'auto' // Centers this item
-  }}>
-    <Box sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 2,
-      maxWidth: 300
-    }}>
-      <Avatar sx={{ bgcolor: 'primary.main' }}><AssignmentTurnedIn /></Avatar>
-      <div>
-        <Typography variant="subtitle2" color="textSecondary">SMV</Typography>
-        <Typography variant="h6">{data.smv}</Typography>
-      </div>
-    </Box>
-  </Box>
+                {/* SMV - Centered */}
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  mx: 'auto'
+                }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    maxWidth: 300
+                  }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><AssignmentTurnedIn /></Avatar>
+                    <div>
+                      <Typography variant="subtitle2" color="textSecondary">SMV</Typography>
+                      <Typography variant="h6">{data.smv}</Typography>
+                    </div>
+                  </Box>
+                </Box>
 
-  {/* Present Carder - Right aligned */}
-  <Box sx={{
-    width: { xs: '100%', sm: 'auto' },
-    display: 'flex',
-    justifyContent: 'flex-end',
-    ml: { sm: 'auto' } // Pushes this item to the right
-  }}>
-    <Box sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 2,
-      maxWidth: 300
-    }}>
-      <Avatar sx={{ bgcolor: 'primary.main' }}><Person /></Avatar>
-      <div>
-        <Typography variant="subtitle2" color="textSecondary">PRESENT CARDER</Typography>
-        <Typography variant="h6">{data.availableCader}</Typography>
-      </div>
-    </Box>
-  </Box>
-</Box>
+                {/* Present Carder - Right aligned */}
+                <Box sx={{
+                  width: { xs: '100%', sm: 'auto' },
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  ml: { sm: 'auto' }
+                }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    maxWidth: 300
+                  }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><Person /></Avatar>
+                    <div>
+                      <Typography variant="subtitle2" color="textSecondary">PRESENT CARDER</Typography>
+                      <Typography variant="h6">{data.availableCader}</Typography>
+                    </div>
+                  </Box>
+                </Box>
+              </Box>
+
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 8, flexWrap: 'wrap' }}>
                 <Controller
                   control={control}
@@ -553,126 +581,129 @@ const ProductionUpdatePage = () => {
                   )}
                 />
 
-                {filters.teamNo && (
-                  <>
-                    <Controller
-                      control={control}
-                      name="style"
-                      render={({ field }) => (
-                        <Autocomplete
-                          value={field.value || ''}
-                          onChange={(_event, newValue) => {
-                            field.onChange(newValue);
-                            setFilters(prev => ({
-                              ...prev,
-                              style: newValue || "",
-                            }));
-                          }}
-                          size="small"
-                          options={dropdownOptions.styles}
-                          getOptionLabel={(option) => option}
-                          sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              required
-                              error={!!errors.style}
-                              helperText={errors.style && "Required"}
-                              label="Style"
-                            />
-                          )}
+                <Controller
+                  control={control}
+                  name="style"
+                  render={({ field }) => (
+                    <Autocomplete
+                      value={field.value || ''}
+                      onChange={(_event, newValue) => {
+                        field.onChange(newValue);
+                        setFilters(prev => ({
+                          ...prev,
+                          style: newValue || "",
+                        }));
+                      }}
+                      size="small"
+                      options={dropdownOptions.styleNo}
+                      getOptionLabel={(option) => option}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.style}
+                          helperText={errors.style && "Required"}
+                          label="Style"
+                          disabled={!filters.teamNo}
                         />
                       )}
                     />
-                    <Controller
-                      control={control}
-                      name="color"
-                      render={({ field }) => (
-                        <Autocomplete
-                          value={field.value || ''}
-                          onChange={(_event, newValue) => {
-                            field.onChange(newValue);
-                            setFilters(prev => ({
-                              ...prev,
-                              color: newValue || "",
-                            }));
-                          }}
-                          size="small"
-                          options={dropdownOptions.colors}
-                          getOptionLabel={(option) => option}
-                          sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              required
-                              error={!!errors.color}
-                              helperText={errors.color && "Required"}
-                              label="Color"
-                            />
-                          )}
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="color"
+                  render={({ field }) => (
+                    <Autocomplete
+                      value={field.value || ''}
+                      onChange={(_event, newValue) => {
+                        field.onChange(newValue);
+                        setFilters(prev => ({
+                          ...prev,
+                          color: newValue || "",
+                        }));
+                      }}
+                      size="small"
+                      options={dropdownOptions.colors}
+                      getOptionLabel={(option) => option}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.color}
+                          helperText={errors.color && "Required"}
+                          label="Color"
+                          disabled={!filters.teamNo}
                         />
                       )}
                     />
-                    <Controller
-                      control={control}
-                      name="size"
-                      render={({ field }) => (
-                        <Autocomplete
-                          value={field.value || ''}
-                          onChange={(_event, newValue) => {
-                            field.onChange(newValue);
-                            setFilters(prev => ({
-                              ...prev,
-                              size: newValue || "",
-                            }));
-                          }}
-                          size="small"
-                          options={dropdownOptions.sizes}
-                          getOptionLabel={(option) => option}
-                          sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              required
-                              error={!!errors.size}
-                              helperText={errors.size && "Required"}
-                              label="Size"
-                            />
-                          )}
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="size"
+                  render={({ field }) => (
+                    <Autocomplete
+                      value={field.value || ''}
+                      onChange={(_event, newValue) => {
+                        field.onChange(newValue);
+                        setFilters(prev => ({
+                          ...prev,
+                          size: newValue || "",
+                        }));
+                      }}
+                      size="small"
+                      options={dropdownOptions.sizes}
+                      getOptionLabel={(option) => option}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.size}
+                          helperText={errors.size && "Required"}
+                          label="Size"
+                          disabled={!filters.teamNo}
                         />
                       )}
                     />
-                    <Controller
-                      control={control}
-                      name="checkPoint"
-                      render={({ field }) => (
-                        <Autocomplete
-                          value={field.value || ''}
-                          onChange={(_event, newValue) => {
-                            field.onChange(newValue);
-                            setFilters(prev => ({
-                              ...prev,
-                              checkPoint: newValue || "",
-                            }));
-                          }}
-                          size="small"
-                          options={dropdownOptions.checkPoints}
-                          getOptionLabel={(option) => option}
-                          sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              required
-                              error={!!errors.checkPoint}
-                              helperText={errors.checkPoint && "Required"}
-                              label="Check Point"
-                            />
-                          )}
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="checkPoint"
+                  render={({ field }) => (
+                    <Autocomplete
+                      value={field.value || ''}
+                      onChange={(_event, newValue) => {
+                        field.onChange(newValue);
+                        setFilters(prev => ({
+                          ...prev,
+                          checkPoint: newValue || "",
+                        }));
+                      }}
+                      size="small"
+                      options={dropdownOptions.checkPoints}
+                      getOptionLabel={(option) => option}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          error={!!errors.checkPoint}
+                          helperText={errors.checkPoint && "Required"}
+                          label="Check Point"
+                          disabled={!filters.teamNo}
                         />
                       )}
                     />
-                  </>
-                )}
+                  )}
+                />
               </Stack>
 
               {loading.data ? (
@@ -816,6 +847,7 @@ const ProductionUpdatePage = () => {
                   </Box>
                 </Box>
               )}
+
               <Stack
                 direction="row"
                 flexWrap="inherit"
@@ -853,7 +885,6 @@ const ProductionUpdatePage = () => {
                         </Typography>
                         {isCurrentHour && (
                           <Typography variant="caption" display="block" sx={{ color: 'yellow' }}>
-
                           </Typography>
                         )}
                       </Box>
@@ -1016,21 +1047,6 @@ const ProductionUpdatePage = () => {
             </Button>
           </DialogActions>
         </Dialog>
-
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-            sx={{ width: '100%' }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
       </Box>
     </Box>
   );

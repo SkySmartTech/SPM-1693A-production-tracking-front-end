@@ -24,7 +24,7 @@ export async function fetchColorData(lineNo: string) {
 }
 
 export async function fetchStyleData(lineNo: string) {
-  const res = await axios.get(`/api/all-day-plans?lineNo=${lineNo}`);
+  const res = await axios.get(`/api/all-styles?lineNo=${lineNo}`);
   return res.data;
 }
 
