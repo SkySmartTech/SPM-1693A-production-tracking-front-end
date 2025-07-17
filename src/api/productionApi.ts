@@ -39,7 +39,7 @@ export async function fetchCheckPointData(lineNo: string) {
 }
 
 export async function fetchBuyerDetails(lineNo: string) {
-  const res = await axios.post(`/api/get-production-data?lineNo=${lineNo}`);
+  const res = await axios.post(`/api/get-buyer?lineNo=${lineNo}`);
   return res.data;
 }
 
