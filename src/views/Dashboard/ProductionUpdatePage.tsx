@@ -136,7 +136,7 @@ const ProductionUpdatePage = () => {
     defectCode: ''
   });
   const [dropdownOptions, setDropdownOptions] = useState({
-    styleNo: [] as string[],
+    styleDescription: [] as string[],
     colors: [] as string[],
     sizes: [] as string[],
     checkPoints: [] as string[]
@@ -158,40 +158,40 @@ const ProductionUpdatePage = () => {
     return () => clearInterval(interval);
   }, []);
 
-const fetchProductionData = async (teamNo: string) => {
-  if (!teamNo) {
-    return defaultProductionData;
-  }
-  
-  try {
-    const res = await axios.post(`/api/get-production-data?lineNo=${teamNo}`);
-    const responseData = res.data;
-    const productionData = responseData.dayPlan?.[0] || {};
+  const fetchProductionData = async (teamNo: string) => {
+    if (!teamNo) {
+      return defaultProductionData;
+    }
 
-    return {
-      buyer: productionData.buyer || "N/A",
-      gg: productionData.gg?.toString() || "0",
-      smv: productionData.smv?.toString() || "0",
-      availableCader: productionData.availableCader?.toString() || "0",
-      successCount: responseData.successCount || 0,
-      reworkCount: responseData.reworkCount || 0,
-      defectCount: responseData.defectCount || 0,
-      hourlyData: responseData.hourlySuccess ? [
-        responseData.hourlySuccess['1'] || 0,
-        responseData.hourlySuccess['2'] || 0,
-        responseData.hourlySuccess['3'] || 0,
-        responseData.hourlySuccess['4'] || 0,
-        responseData.hourlySuccess['5'] || 0,
-        responseData.hourlySuccess['6'] || 0,
-        responseData.hourlySuccess['7'] || 0,
-        responseData.hourlySuccess['8'] || 0
-      ] : [0, 0, 0, 0, 0, 0, 0, 0]
-    };
-  } catch (error) {
-    console.error('Error fetching production data:', error);
-    return defaultProductionData;
-  }
-};
+    try {
+      const res = await axios.post(`/api/get-production-data?lineNo=${teamNo}`);
+      const responseData = res.data;
+      const productionData = responseData.dayPlan?.[0] || {};
+
+      return {
+        buyer: productionData.buyer || "N/A",
+        gg: productionData.gg?.toString() || "0",
+        smv: productionData.smv?.toString() || "0",
+        availableCader: productionData.availableCader?.toString() || "0",
+        successCount: responseData.successCount || 0,
+        reworkCount: responseData.reworkCount || 0,
+        defectCount: responseData.defectCount || 0,
+        hourlyData: responseData.hourlySuccess ? [
+          responseData.hourlySuccess['1'] || 0,
+          responseData.hourlySuccess['2'] || 0,
+          responseData.hourlySuccess['3'] || 0,
+          responseData.hourlySuccess['4'] || 0,
+          responseData.hourlySuccess['5'] || 0,
+          responseData.hourlySuccess['6'] || 0,
+          responseData.hourlySuccess['7'] || 0,
+          responseData.hourlySuccess['8'] || 0
+        ] : [0, 0, 0, 0, 0, 0, 0, 0]
+      };
+    } catch (error) {
+      console.error('Error fetching production data:', error);
+      return defaultProductionData;
+    }
+  };
 
   const loadDropdownOptions = async (teamNo: string) => {
     try {
@@ -205,7 +205,7 @@ const fetchProductionData = async (teamNo: string) => {
       ]);
 
       setDropdownOptions({
-        styleNo: styles.map((item: any) => item.styleNo) || [],
+        styleDescription: styles.map((item: any) => item.styleDescription) || [],
         colors: colors.map((item: any) => item.color) || [],
         sizes: sizes.map((item: any) => item.sizeName) || [],
         checkPoints: checkPoints.map((item: any) => item.actual_column_name) || []
@@ -255,21 +255,24 @@ const fetchProductionData = async (teamNo: string) => {
 
         const details = await fetchBuyerDetails(newValue);
         const productionData = details.latestProductionData?.[0] || {};
+        const dayPlanData = details.dayPlan?.[0] || {};
 
+        // Create new filters with data from both sources
         const newFilters = {
           teamNo: newValue,
-          style: productionData.style || "",
-          color: productionData.color || "",
-          size: productionData.sizeName || "",
-          checkPoint: productionData.checkPoint || ""
+          style: productionData.style || dayPlanData.style || "",
+          color: productionData.color || dayPlanData.color || "",
+          size: productionData.sizeName || dayPlanData.sizeName || "",
+          checkPoint: productionData.checkPoint || dayPlanData.checkPoint || ""
         };
 
         setFilters(newFilters);
 
-        if (productionData.style) setValue("style", productionData.style);
-        if (productionData.color) setValue("color", productionData.color);
-        if (productionData.sizeName) setValue("size", productionData.sizeName);
-        if (productionData.checkPoint) setValue("checkPoint", productionData.checkPoint);
+        // Set form values if data exists
+        if (newFilters.style) setValue("style", newFilters.style);
+        if (newFilters.color) setValue("color", newFilters.color);
+        if (newFilters.size) setValue("size", newFilters.size);
+        if (newFilters.checkPoint) setValue("checkPoint", newFilters.checkPoint);
 
       } catch (error) {
         console.error('Error loading team details:', error);
@@ -287,7 +290,7 @@ const fetchProductionData = async (teamNo: string) => {
       });
       setData(defaultProductionData);
       setDropdownOptions({
-        styleNo: [],
+        styleDescription: [],
         colors: [],
         sizes: [],
         checkPoints: []
@@ -386,9 +389,9 @@ const fetchProductionData = async (teamNo: string) => {
   };
 
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
-    setSnackbar({ 
-      open: true, 
-      message, 
+    setSnackbar({
+      open: true,
+      message,
       severity,
       anchorOrigin: { vertical: 'top', horizontal: 'center' }
     });
@@ -595,7 +598,7 @@ const fetchProductionData = async (teamNo: string) => {
                         }));
                       }}
                       size="small"
-                      options={dropdownOptions.styleNo}
+                      options={dropdownOptions.styleDescription || []}
                       getOptionLabel={(option) => option}
                       sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
                       renderInput={(params) => (
@@ -863,7 +866,7 @@ const fetchProductionData = async (teamNo: string) => {
                   return (
                     <Box key={index} sx={{
                       mb: 2,
-                      width: { xs: '100%', sm: '48%', md: '23%', lg: '12%'},
+                      width: { xs: '100%', sm: '48%', md: '23%', lg: '12%' },
                       minWidth: '100px'
                     }}>
                       <Box sx={{
