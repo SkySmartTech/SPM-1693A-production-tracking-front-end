@@ -55,7 +55,7 @@ interface ProductionData {
   buyer: string;
   gg: string;
   smv: string;
-  presentCarder: string;
+  availableCader: string;
   reworkCount: number;
   successCount: number;
   defectCount: number;
@@ -76,7 +76,6 @@ interface DefectReworkData {
   defectCodes: string[];
 }
 
-
 interface StyleOption {
   style: any;
   sizeName: any;
@@ -89,10 +88,10 @@ interface StyleOption {
 }
 
 const defaultProductionData: ProductionData = {
-  buyer: 'N/A',
+  buyer: '0',
   gg: '0',
   smv: '0',
-  presentCarder: '0',
+  availableCader: '0',
   reworkCount: 0,
   successCount: 0,
   defectCount: 0,
@@ -124,7 +123,8 @@ const ProductionUpdatePage = () => {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
-    severity: 'success' as 'success' | 'error' | 'info' | 'warning'
+    severity: 'success' as 'success' | 'error' | 'info' | 'warning',
+    anchorOrigin: { vertical: 'top', horizontal: 'center' }
   });
   const [dialogOpen, setDialogOpen] = useState({
     rework: false,
@@ -136,50 +136,67 @@ const ProductionUpdatePage = () => {
     defectCode: ''
   });
   const [dropdownOptions, setDropdownOptions] = useState({
-    styles: [] as string[],
+    styleNo: [] as string[],
     colors: [] as string[],
     sizes: [] as string[],
     checkPoints: [] as string[]
   });
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [, setInitialLoadComplete] = useState(false);
+  const [currentHour, setCurrentHour] = useState<number>(0);
   const theme = useTheme();
   useCustomTheme();
 
-  const fetchProductionData = async (teamNo: string) => {
-    try {
-      const res = await axios.post(`/api/get-production-data?lineNo=${teamNo}`);
-      const responseData = res.data;
-      const productionData = responseData.dayPlan?.[0] || {};
+  useEffect(() => {
+    const updateCurrentHour = () => {
+      const now = new Date();
+      setCurrentHour(now.getHours());
+    };
 
-      return {
-        buyer: productionData.buyer || "N/A",
-        gg: productionData.gg?.toString() || "0",
-        smv: productionData.smv?.toString() || "0",
-        presentCarder: productionData.presentCarder?.toString() || "0",
-        successCount: responseData.successCount || 0,
-        reworkCount: responseData.reworkCount || 0,
-        defectCount: responseData.defectCount || 0,
-        hourlyData: responseData.hourlySuccess ? [
-          responseData.hourlySuccess['1'] || 0,
-          responseData.hourlySuccess['2'] || 0,
-          responseData.hourlySuccess['3'] || 0,
-          responseData.hourlySuccess['4'] || 0,
-          responseData.hourlySuccess['5'] || 0,
-          responseData.hourlySuccess['6'] || 0,
-          responseData.hourlySuccess['7'] || 0,
-          responseData.hourlySuccess['8'] || 0
-        ] : [0, 0, 0, 0, 0, 0, 0, 0]
-      };
-    } catch (error) {
-      console.error('Error fetching production data:', error);
-      throw error;
-    }
-  };
+    updateCurrentHour();
+    const interval = setInterval(updateCurrentHour, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+const fetchProductionData = async (teamNo: string) => {
+  if (!teamNo) {
+    return defaultProductionData;
+  }
+  
+  try {
+    const res = await axios.post(`/api/get-production-data?lineNo=${teamNo}`);
+    const responseData = res.data;
+    const productionData = responseData.dayPlan?.[0] || {};
+
+    return {
+      buyer: productionData.buyer || "N/A",
+      gg: productionData.gg?.toString() || "0",
+      smv: productionData.smv?.toString() || "0",
+      availableCader: productionData.availableCader?.toString() || "0",
+      successCount: responseData.successCount || 0,
+      reworkCount: responseData.reworkCount || 0,
+      defectCount: responseData.defectCount || 0,
+      hourlyData: responseData.hourlySuccess ? [
+        responseData.hourlySuccess['1'] || 0,
+        responseData.hourlySuccess['2'] || 0,
+        responseData.hourlySuccess['3'] || 0,
+        responseData.hourlySuccess['4'] || 0,
+        responseData.hourlySuccess['5'] || 0,
+        responseData.hourlySuccess['6'] || 0,
+        responseData.hourlySuccess['7'] || 0,
+        responseData.hourlySuccess['8'] || 0
+      ] : [0, 0, 0, 0, 0, 0, 0, 0]
+    };
+  } catch (error) {
+    console.error('Error fetching production data:', error);
+    return defaultProductionData;
+  }
+};
 
   const loadDropdownOptions = async (teamNo: string) => {
     try {
       setLoading(prev => ({ ...prev, options: true }));
-      
+
       const [colors, styles, sizes, checkPoints] = await Promise.all([
         fetchColorData(teamNo),
         fetchStyleData(teamNo),
@@ -188,7 +205,7 @@ const ProductionUpdatePage = () => {
       ]);
 
       setDropdownOptions({
-        styles: styles.map((item: any) => item.style) || [],
+        styleNo: styles.map((item: any) => item.styleNo) || [],
         colors: colors.map((item: any) => item.color) || [],
         sizes: sizes.map((item: any) => item.sizeName) || [],
         checkPoints: checkPoints.map((item: any) => item.actual_column_name) || []
@@ -207,8 +224,7 @@ const ProductionUpdatePage = () => {
     if (newValue) {
       try {
         setLoading(prev => ({ ...prev, data: true }));
-        
-        // Clear all dropdowns first
+
         setFilters({
           teamNo: newValue,
           style: '',
@@ -221,14 +237,11 @@ const ProductionUpdatePage = () => {
         setValue("size", "");
         setValue("checkPoint", "");
 
-        // Load dropdown options for this team
         await loadDropdownOptions(newValue);
 
-        // Fetch production data for the selected team
         const productionStats = await fetchProductionData(newValue);
         setData(productionStats);
 
-        // Fetch defect/rework options
         const [defectOptions, partLocationOptions] = await Promise.all([
           fetchDefectReworkOptions(newValue),
           fetchPartLocationOptions(newValue)
@@ -240,10 +253,9 @@ const ProductionUpdatePage = () => {
           defectCodes: defectOptions.defectCodes
         });
 
-        // Get default values for this team
         const details = await fetchBuyerDetails(newValue);
         const productionData = details.latestProductionData?.[0] || {};
-        
+
         const newFilters = {
           teamNo: newValue,
           style: productionData.style || "",
@@ -251,10 +263,9 @@ const ProductionUpdatePage = () => {
           size: productionData.sizeName || "",
           checkPoint: productionData.checkPoint || ""
         };
-        
+
         setFilters(newFilters);
-        
-        // Set form values if data exists
+
         if (productionData.style) setValue("style", productionData.style);
         if (productionData.color) setValue("color", productionData.color);
         if (productionData.sizeName) setValue("size", productionData.sizeName);
@@ -267,7 +278,6 @@ const ProductionUpdatePage = () => {
         setLoading(prev => ({ ...prev, data: false }));
       }
     } else {
-      // Clear everything if teamNo is cleared
       setFilters({
         teamNo: '',
         style: '',
@@ -277,7 +287,7 @@ const ProductionUpdatePage = () => {
       });
       setData(defaultProductionData);
       setDropdownOptions({
-        styles: [],
+        styleNo: [],
         colors: [],
         sizes: [],
         checkPoints: []
@@ -289,31 +299,7 @@ const ProductionUpdatePage = () => {
     const loadInitialData = async () => {
       try {
         setLoading(prev => ({ ...prev, options: true }));
-        const teams = await fetchTeamData();
-        
-        // Reset all data first
-        setFilters({
-          teamNo: '',
-          style: '',
-          color: '',
-          size: '',
-          checkPoint: ''
-        });
-        setData(defaultProductionData);
-        setDropdownOptions({
-          styles: [],
-          colors: [],
-          sizes: [],
-          checkPoints: []
-        });
 
-        // Only set first team if teams exist, but don't load data yet
-        if (teams.length > 0) {
-          setFilters(prev => ({
-            ...prev,
-            teamNo: teams[0].lineNo || ''
-          }));
-        }
       } catch (error) {
         console.error('Error loading initial data:', error);
         showSnackbar('Failed to load initial data', 'error');
@@ -325,24 +311,6 @@ const ProductionUpdatePage = () => {
 
     loadInitialData();
   }, []);
-
-  useEffect(() => {
-    if (initialLoadComplete && filters.teamNo) {
-      const loadTeamData = async () => {
-        try {
-          setLoading(prev => ({ ...prev, data: true }));
-          await handleTeamNoChange(filters.teamNo, { onChange: () => {} });
-        } catch (error) {
-          console.error('Error loading team data:', error);
-          showSnackbar('Failed to load team data', 'error');
-        } finally {
-          setLoading(prev => ({ ...prev, data: false }));
-        }
-      };
-      
-      loadTeamData();
-    }
-  }, [initialLoadComplete, filters.teamNo]);
 
   const handleFormChange = (event: SelectChangeEvent) => {
     const { name, value } = event.target;
@@ -372,11 +340,10 @@ const ProductionUpdatePage = () => {
         qualityState: "Success"
       });
       await saveHourlyCount({ filters, qualityState: "Success" });
-      
-      // Refresh the counts after submission
+
       const updatedData = await fetchProductionData(filters.teamNo);
       setData(updatedData);
-      
+
       showSnackbar("Success submitted", "success");
     } catch (error) {
       showSnackbar("Failed to submit success", "error");
@@ -405,11 +372,10 @@ const ProductionUpdatePage = () => {
         filters,
         qualityState: type === "rework" ? "Rework" : "Defect"
       });
-      
-      // Refresh the counts after submission
+
       const updatedData = await fetchProductionData(filters.teamNo);
       setData(updatedData);
-      
+
       showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} submitted successfully`, 'success');
       handleDialogClose(type);
     } catch (error) {
@@ -420,7 +386,12 @@ const ProductionUpdatePage = () => {
   };
 
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
-    setSnackbar({ open: true, message, severity });
+    setSnackbar({ 
+      open: true, 
+      message, 
+      severity,
+      anchorOrigin: { vertical: 'top', horizontal: 'center' }
+    });
   };
 
   const {
@@ -436,6 +407,11 @@ const ProductionUpdatePage = () => {
     queryKey: ["teams"],
     queryFn: fetchTeamData,
   });
+
+  const workingHours = {
+    start: 8,
+    end: 16
+  };
 
   return (
     <Box sx={{ display: "flex", width: "100vw", height: "100vh", minHeight: "100vh" }}>
@@ -461,36 +437,124 @@ const ProductionUpdatePage = () => {
             setSidebarOpen={setSidebarOpen}
           />
         </AppBar>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{ mt: 6 }}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+
         <Box sx={{ p: 3, flexGrow: 1, overflow: "auto" }}>
           {loading.options ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-              <CircularProgress size={60} />
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px' }}>
+              <CircularProgress size={40} />
               <Typography variant="h6" sx={{ ml: 2 }}>Loading initial data...</Typography>
             </Box>
           ) : (
             <Card sx={{ p: 3, borderRadius: '12px', boxShadow: 3 }}>
-              <Stack direction="row" spacing={3} sx={{ mb: 3 }}>
-                {[
-                  { label: 'BUYER', value: data.buyer, icon: <Person /> },
-                  { label: 'GG', value: data.gg, icon: <StyleIcon /> },
-                  { label: 'SMV', value: data.smv, icon: <AssignmentTurnedIn /> },
-                  { label: 'PRESENT CARDER', value: data.presentCarder, icon: <Person /> }
-                ].map((item, index) => (
-                  <Box key={index} sx={{ width: { xs: '100%', sm: '25%' } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 4 }}>
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>{item.icon}</Avatar>
-                      <div>
-                        <Typography variant="subtitle2" color="textSecondary">
-                          {item.label}
-                        </Typography>
-                        <Typography variant="h6">{item.value}</Typography>
-                      </div>
-                    </Box>
+              <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: { xs: 2, sm: 0 },
+                mb: 8,
+                width: '100%'
+              }}>
+                {/* Buyer - Left aligned */}
+                <Box sx={{
+                  width: { xs: '100%', sm: 'auto' },
+                  display: 'flex',
+                  justifyContent: 'flex-start',
+                  mr: { sm: 'auto' }
+                }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    maxWidth: 300
+                  }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><Person /></Avatar>
+                    <div>
+                      <Typography variant="subtitle2" color="textSecondary">BUYER</Typography>
+                      <Typography variant="h6">{data.buyer}</Typography>
+                    </div>
                   </Box>
-                ))}
-              </Stack>
+                </Box>
 
-              <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                {/* GG - Centered */}
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  mx: 'auto'
+                }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    maxWidth: 300
+                  }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><StyleIcon /></Avatar>
+                    <div>
+                      <Typography variant="subtitle2" color="textSecondary">GG</Typography>
+                      <Typography variant="h6">{data.gg}</Typography>
+                    </div>
+                  </Box>
+                </Box>
+
+                {/* SMV - Centered */}
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  mx: 'auto'
+                }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    maxWidth: 300
+                  }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><AssignmentTurnedIn /></Avatar>
+                    <div>
+                      <Typography variant="subtitle2" color="textSecondary">SMV</Typography>
+                      <Typography variant="h6">{data.smv}</Typography>
+                    </div>
+                  </Box>
+                </Box>
+
+                {/* Present Carder - Right aligned */}
+                <Box sx={{
+                  width: { xs: '100%', sm: 'auto' },
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  ml: { sm: 'auto' }
+                }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    maxWidth: 300
+                  }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><Person /></Avatar>
+                    <div>
+                      <Typography variant="subtitle2" color="textSecondary">PRESENT CARDER</Typography>
+                      <Typography variant="h6">{data.availableCader}</Typography>
+                    </div>
+                  </Box>
+                </Box>
+              </Box>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 8, flexWrap: 'wrap' }}>
                 <Controller
                   control={control}
                   name="teamNo"
@@ -503,7 +567,7 @@ const ProductionUpdatePage = () => {
                       size="small"
                       options={teamData?.map(team => team.lineNo) || []}
                       getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -516,6 +580,7 @@ const ProductionUpdatePage = () => {
                     />
                   )}
                 />
+
                 <Controller
                   control={control}
                   name="style"
@@ -530,9 +595,9 @@ const ProductionUpdatePage = () => {
                         }));
                       }}
                       size="small"
-                      options={dropdownOptions.styles}
+                      options={dropdownOptions.styleNo}
                       getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -540,11 +605,13 @@ const ProductionUpdatePage = () => {
                           error={!!errors.style}
                           helperText={errors.style && "Required"}
                           label="Style"
+                          disabled={!filters.teamNo}
                         />
                       )}
                     />
                   )}
                 />
+
                 <Controller
                   control={control}
                   name="color"
@@ -561,7 +628,7 @@ const ProductionUpdatePage = () => {
                       size="small"
                       options={dropdownOptions.colors}
                       getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -569,11 +636,13 @@ const ProductionUpdatePage = () => {
                           error={!!errors.color}
                           helperText={errors.color && "Required"}
                           label="Color"
+                          disabled={!filters.teamNo}
                         />
                       )}
                     />
                   )}
                 />
+
                 <Controller
                   control={control}
                   name="size"
@@ -590,7 +659,7 @@ const ProductionUpdatePage = () => {
                       size="small"
                       options={dropdownOptions.sizes}
                       getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -598,11 +667,13 @@ const ProductionUpdatePage = () => {
                           error={!!errors.size}
                           helperText={errors.size && "Required"}
                           label="Size"
+                          disabled={!filters.teamNo}
                         />
                       )}
                     />
                   )}
                 />
+
                 <Controller
                   control={control}
                   name="checkPoint"
@@ -619,7 +690,7 @@ const ProductionUpdatePage = () => {
                       size="small"
                       options={dropdownOptions.checkPoints}
                       getOptionLabel={(option) => option}
-                      sx={{ flex: 1, margin: "0.5rem" }}
+                      sx={{ flex: 1, margin: "0.5rem", minWidth: '200px' }}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -627,6 +698,7 @@ const ProductionUpdatePage = () => {
                           error={!!errors.checkPoint}
                           helperText={errors.checkPoint && "Required"}
                           label="Check Point"
+                          disabled={!filters.teamNo}
                         />
                       )}
                     />
@@ -636,99 +708,189 @@ const ProductionUpdatePage = () => {
 
               {loading.data ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                  <CircularProgress size={40} />
+                  <CircularProgress size={30} />
                 </Box>
               ) : (
-                <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-                  {[
-                    {
-                      title: 'Success',
-                      value: data.successCount,
-                      gradient: 'linear-gradient(to right, #00BA57, #006931)',
-                      icon: <AssignmentTurnedIn sx={{ fontSize: 40, opacity: 0.8 }} />,
-                      onClick: handleSuccessClick
-                    },
-                    {
-                      title: 'Rework',
-                      value: data.reworkCount,
-                      gradient: 'linear-gradient(to right, #FFD900, #DB5B00)',
-                      icon: <StyleIcon sx={{ fontSize: 40, opacity: 0.8 }} />,
-                      onClick: () => handleDialogOpen('rework')
-                    },
-                    {
-                      title: 'Defect',
-                      value: data.defectCount,
-                      gradient: 'linear-gradient(to right, #EB0004, #960003)',
-                      icon: <Delete sx={{ fontSize: 40, opacity: 0.8 }} />,
-                      onClick: () => handleDialogOpen('defect')
-                    }
-                  ].map((status, index) => (
-                    <Box key={index} sx={{ width: { xs: '100%', md: '33%' } }}>
-                      <Box
-                        sx={{
-                          p: 3,
-                          borderRadius: '12px',
-                          background: status.gradient,
-                          color: 'white',
-                          boxShadow: 3,
-                          height: 120,
-                          width: 300,
-                          display: 'flex',
-                          marginBottom: 5,
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          position: 'relative',
-                          transition: 'transform 0.3s',
-                          '&:hover': {
-                            transform: 'scale(1.02)',
-                            cursor: typeof status.onClick === 'function' ? 'pointer' : 'default'
-                          }
-                        }}
-                        onClick={status.onClick || undefined}
-                      >
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                          {status.title}
-                        </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Box sx={{ position: 'absolute', bottom: 10, left: 15 }}>
-                            {status.icon}
-                          </Box>
-                          <Typography variant="h4" sx={{ fontWeight: 'bold', position: 'absolute', bottom: 10, right: 15 }}>
-                            {status.value}
-                          </Typography>
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  mb: 10,
+                  mt: 11,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 2, sm: 0 }
+                }}>
+                  {/* Success Box - Left aligned */}
+                  <Box sx={{
+                    width: { xs: '100%', sm: '32%' },
+                    display: 'flex',
+                    justifyContent: { xs: 'center', sm: 'flex-start' }
+                  }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        borderRadius: '12px',
+                        background: 'linear-gradient(to right, #00BA57, #006931)',
+                        color: 'white',
+                        boxShadow: 3,
+                        height: 130,
+                        width: '100%',
+                        maxWidth: 300,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        position: 'relative',
+                        transition: 'transform 0.3s',
+                        '&:hover': {
+                          transform: 'scale(1.02)',
+                          cursor: 'pointer'
+                        }
+                      }}
+                      onClick={handleSuccessClick}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Success
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ position: 'absolute', bottom: 10, left: 15 }}>
+                          <AssignmentTurnedIn sx={{ fontSize: 40, opacity: 0.8 }} />
                         </Box>
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', position: 'absolute', bottom: 10, right: 15 }}>
+                          {data.successCount}
+                        </Typography>
                       </Box>
                     </Box>
-                  ))}
-                </Stack>
+                  </Box>
+
+                  {/* Rework Box - Centered */}
+                  <Box sx={{
+                    width: { xs: '100%', sm: '32%' },
+                    display: 'flex',
+                    justifyContent: 'center'
+                  }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        borderRadius: '12px',
+                        background: 'linear-gradient(to right, #FFD900, #DB5B00)',
+                        color: 'white',
+                        boxShadow: 3,
+                        height: 130,
+                        width: '100%',
+                        maxWidth: 300,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        position: 'relative',
+                        transition: 'transform 0.3s',
+                        '&:hover': {
+                          transform: 'scale(1.02)',
+                          cursor: 'pointer'
+                        }
+                      }}
+                      onClick={() => handleDialogOpen('rework')}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Rework
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ position: 'absolute', bottom: 10, left: 15 }}>
+                          <StyleIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+                        </Box>
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', position: 'absolute', bottom: 10, right: 15 }}>
+                          {data.reworkCount}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Defect Box - Right aligned */}
+                  <Box sx={{
+                    width: { xs: '100%', sm: '32%' },
+                    display: 'flex',
+                    justifyContent: { xs: 'center', sm: 'flex-end' }
+                  }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        borderRadius: '12px',
+                        background: 'linear-gradient(to right, #EB0004, #960003)',
+                        color: 'white',
+                        boxShadow: 3,
+                        height: 130,
+                        width: '100%',
+                        maxWidth: 300,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        position: 'relative',
+                        transition: 'transform 0.3s',
+                        '&:hover': {
+                          transform: 'scale(1.02)',
+                          cursor: 'pointer'
+                        }
+                      }}
+                      onClick={() => handleDialogOpen('defect')}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Defect
+                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ position: 'absolute', bottom: 10, left: 15 }}>
+                          <Delete sx={{ fontSize: 40, opacity: 0.8 }} />
+                        </Box>
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', position: 'absolute', bottom: 10, right: 15 }}>
+                          {data.defectCount}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
               )}
 
               <Stack
                 direction="row"
-                flexWrap="initial"
+                flexWrap="inherit"
                 spacing={2}
                 useFlexGap
                 sx={{ width: '100%', mt: 3 }}
               >
-                {Array.isArray(data.hourlyData) && data.hourlyData.map((value, index) => (
-                  <Box key={index} sx={{ width: { xs: '90%', sm: '48%', md: '23%', lg: '15%' } }}>
-                    <Box sx={{
-                      p: 2,
-                      textAlign: 'center',
-                      borderRadius: '8px',
-                      boxShadow: 3,
-                      bgcolor: '#78B3CE',
-                      transition: 'transform 0.3s',
-                      '&:hover': { transform: 'translateY(-5px)' }
+                {Array.isArray(data.hourlyData) && data.hourlyData.map((value, index) => {
+                  const hourInDay = workingHours.start + index;
+                  const isPastHour = currentHour > hourInDay;
+                  const isCurrentHour = currentHour === hourInDay;
+
+                  return (
+                    <Box key={index} sx={{
+                      mb: 2,
+                      width: { xs: '100%', sm: '48%', md: '23%', lg: '12%'},
+                      minWidth: '100px'
                     }}>
-                      <Typography variant="subtitle2" color="textSecondary">
-                        HOUR: {index + 1}
-                      </Typography>
-                      <Divider sx={{ my: 1 }} />
-                      <Typography variant="h5">{value}</Typography>
+                      <Box sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        borderRadius: '8px',
+                        boxShadow: 3,
+                        background: isPastHour
+                          ? 'linear-gradient(to right, #00BA57, #006931)' : isCurrentHour ? '#9fe0a2ff' : '#78B3CE',
+                        transition: 'transform 0.3s',
+                        '&:hover': { transform: 'translateY(-5px)' }
+                      }}>
+                        <Typography variant="subtitle2" color={isPastHour || isCurrentHour ? 'white' : 'textSecondary'}>
+                          HOUR: {index + 1}
+                        </Typography>
+                        <Divider sx={{ my: 1, bgcolor: isPastHour || isCurrentHour ? 'rgba(255,255,255,0.3)' : undefined }} />
+                        <Typography variant="h5" sx={{ color: isPastHour || isCurrentHour ? 'white' : undefined }}>
+                          {value}
+                        </Typography>
+                        {isCurrentHour && (
+                          <Typography variant="caption" display="block" sx={{ color: 'yellow' }}>
+                          </Typography>
+                        )}
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Stack>
             </Card>
           )}
@@ -885,21 +1047,6 @@ const ProductionUpdatePage = () => {
             </Button>
           </DialogActions>
         </Dialog>
-
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-            sx={{ width: '100%' }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
       </Box>
     </Box>
   );

@@ -24,7 +24,7 @@ export async function fetchColorData(lineNo: string) {
 }
 
 export async function fetchStyleData(lineNo: string) {
-  const res = await axios.get(`/api/all-day-plans?lineNo=${lineNo}`);
+  const res = await axios.get(`/api/all-styles?lineNo=${lineNo}`);
   return res.data;
 }
 
@@ -79,7 +79,7 @@ export async function saveProductionUpdate({
     buyer: string;
     gg: string;
     smv: string;
-    presentCarder: string;
+    availableCader: string;
   };
   qualityState: "Success" | "Rework" | "Defect";
   part?: string;
@@ -92,7 +92,7 @@ export async function saveProductionUpdate({
     buyer: data.buyer,
     gg: data.gg,
     smv: Number(data.smv),
-    presentCarder: Number(data.presentCarder),
+    availableCader: Number(data.availableCader),
     style: filters.style,
     color: filters.color,
     sizeName: filters.size,
@@ -194,8 +194,7 @@ export async function fetchHourlySuccess(filters: {
   color: string;
   size: string;
   checkPoint: string;
-})
- {
+}) {
   const params = {
     lineNo: filters.teamNo,
     style: filters.style,
